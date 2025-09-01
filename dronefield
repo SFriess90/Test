@@ -1,8 +1,7 @@
-# starfield_flythrough_variable_stars.py
-# Creates PNG frames in ./frames that resemble flying forward through a starfield.
-# Background is black. Stars vary in size and intrinsic brightness at spawn,
-# and apparent brightness follows a pure inverse-square falloff with distance.
-# Requirements: Pillow, numpy  (pip install pillow numpy)
+# starfield_flythrough_nopop.py
+# Stars vary in intrinsic size/brightness. Apparent brightness is strictly 1/z^2.
+# Spawns are pushed far back so stars brighten smoothly instead of popping.
+# Optional temporal dithering reduces 8-bit quantization popping.
 
 import os
 import math
@@ -19,28 +18,24 @@ N_STARS           = 5000
 FOV_DEG           = 70
 
 # Depth range and motion
-Z_NEAR_WRAP       = 0.5    # when a star crosses this (passes camera), respawn it far away
-Z_SPAWN_MIN       = 80.0   # stars spawn at or beyond this distance
-Z_SPAWN_MAX       = 140.0  # farthest spawn distance (spread helps reduce appearance of sudden density changes)
-SPEED_PER_FRAME   = 0.8    # forward speed (+z direction of motion relative to stars)
+Z_NEAR_WRAP       = 0.8          # when star gets this close, respawn far away
+Z_SPAWN_MIN       = 800.0        # far spawn range (push far to avoid pop-in)
+Z_SPAWN_MAX       = 1600.0
+SPEED_PER_FRAME   = 0.8
 SEED              = 7
 
-# Apparent size controls
-# Each star gets an intrinsic size multiplier at spawn; apparent radius ~ base * (1/z) * intrinsic
-BASE_SIZE_SCALE   = 18.0   # base pixel scale used in radius = BASE_SIZE_SCALE / z * size_intrinsic
-SIZE_JITTER_MIN   = 0.6    # intrinsic size multiplier range
+# Apparent size controls (intrinsic per-star size)
+BASE_SIZE_SCALE   = 18.0
+SIZE_JITTER_MIN   = 0.6
 SIZE_JITTER_MAX   = 1.8
 MIN_RADIUS        = 0.4
 MAX_RADIUS        = 2.6
 
-# Intrinsic luminosity distribution (per-star, applied at spawn/respawn)
-# Apparent brightness = clamp( L_intrinsic / z^2, 0..255 )
-# Log-uniform keeps a few bright "giants" and many dim stars without blowing out the image.
-LUMINOSITY_MIN    = 40.0
-LUMINOSITY_MAX    = 5000.0
+# Intrinsic luminosity distribution (log-uniform)
+LUMINOSITY_MIN    = 5.0
+LUMINOSITY_MAX    = 1200.0
 
-# Optional display gamma for *output encoding* (NOT used to fake fade; just to map to display)
-# Set to 1.0 to disable. Using 1.0 keeps “only inverse-square law” visually literal.
+# Display gamma (1.0 keeps it literal)
 OUTPUT_GAMMA      = 1.0
 
 OUT_DIR = "frames"
@@ -51,127 +46,34 @@ OUT_DIR = "frames"
 np.random.seed(SEED)
 os.makedirs(OUT_DIR, exist_ok=True)
 
-# Perspective focal length (in pixels) based on vertical FOV
 fov_rad = math.radians(FOV_DEG)
 f = 0.5 * HEIGHT / math.tan(0.5 * fov_rad)
 
-# Choose a world-space spread that comfortably covers the FOV at spawn depths
-# Max visible x/y at Z_SPAWN_MIN (tighter cone), add margin so stars flow in from off-screen too
-spread_xy = (Z_SPAWN_MIN * math.tan(0.5 * fov_rad)) * (WIDTH / HEIGHT) * 1.4
+# Use the FAR depth to choose x/y spread so far stars project near center
+spread_xy = (Z_SPAWN_MAX * math.tan(0.5 * fov_rad)) * (WIDTH / HEIGHT) * 0.25
+
+rng = np.random.default_rng(SEED + 1)
+
+def quantize_with_temporal_dither(b_linear_0_255):
+    """
+    Convert linear brightness (float 0..255) to 8-bit using random dithering.
+    Prevents hard 0->1 steps when values hover below 1.
+    """
+    b_floor = np.floor(b_linear_0_255)
+    frac = b_linear_0_255 - b_floor
+    promote = rng.random(frac.shape) < frac
+    return (b_floor + promote).astype(np.uint8)
 
 def sample_intrinsic_sizes(n):
-    """Per-star intrinsic size multipliers."""
     return np.random.uniform(SIZE_JITTER_MIN, SIZE_JITTER_MAX, size=n)
 
 def sample_intrinsic_luminosity(n):
-    """Per-star intrinsic luminosities, log-uniform between LUMINOSITY_MIN and LUMINOSITY_MAX."""
     log_min, log_max = np.log(LUMINOSITY_MIN), np.log(LUMINOSITY_MAX)
     return np.exp(np.random.uniform(log_min, log_max, size=n))
 
 def spawn(n):
-    """Spawn n stars at random far depths with x/y spread, plus intrinsic per-star traits."""
     x = np.random.uniform(-spread_xy, spread_xy, size=n)
     y = np.random.uniform(-spread_xy, spread_xy, size=n)
     z = np.random.uniform(Z_SPAWN_MIN, Z_SPAWN_MAX, size=n)
     size_k = sample_intrinsic_sizes(n)
-    lum = sample_intrinsic_luminosity(n)
-    return x, y, z, size_k, lum
-
-# Initialize stars
-stars_x, stars_y, stars_z, stars_sizek, stars_L = spawn(N_STARS)
-
-def respawn_indices(idx):
-    """Respawn given stars at far depths with new x/y and NEW intrinsic traits."""
-    n = idx.size
-    if n == 0:
-        return
-    x, y, z, size_k, lum = spawn(n)
-    stars_x[idx] = x
-    stars_y[idx] = y
-    stars_z[idx] = z
-    stars_sizek[idx] = size_k
-    stars_L[idx] = lum
-
-def brightness_from_depth(z, L):
-    """
-    Apparent brightness strictly by inverse-square:
-        b_linear = L / z^2
-    Then clamp to [0, 255], optionally apply OUTPUT_GAMMA as a *display* encoding only.
-    """
-    b = L / (z * z)
-    # Normalize gently by clipping to 255; this is not an artificial fade, just display range clamp.
-    b = np.clip(b, 0.0, 255.0)
-
-    if OUTPUT_GAMMA != 1.0:
-        b01 = (b / 255.0)
-        b01 = np.power(b01, 1.0 / OUTPUT_GAMMA)
-        b = np.clip(b01 * 255.0, 0.0, 255.0)
-
-    return b.astype(np.uint8)
-
-def radius_from_depth(z, size_k):
-    """
-    Apparent radius shrinks with distance and scales by per-star intrinsic size.
-    The 1/z factor preserves a subtle perspective growth without being overly 'blobby'.
-    """
-    r = (BASE_SIZE_SCALE / z) * size_k
-    return np.clip(r, MIN_RADIUS, MAX_RADIUS)
-
-# --------------------------
-# Render frames
-# --------------------------
-for frame in range(N_FRAMES):
-    # Move camera forward (+z), which decreases star z relative to camera
-    stars_z -= SPEED_PER_FRAME
-
-    # Stars that have passed the camera -> respawn far away with new intrinsic traits
-    to_respawn = np.where(stars_z <= Z_NEAR_WRAP)[0]
-    if to_respawn.size > 0:
-        respawn_indices(to_respawn)
-
-    # Perspective projection
-    z = stars_z
-    invz = 1.0 / z
-    u = (stars_x * f) * invz + (WIDTH  * 0.5)
-    v = (stars_y * f) * invz + (HEIGHT * 0.5)
-
-    # Visibility mask (on-screen and in front of camera)
-    visible = (
-        (u >= 0) & (u < WIDTH) &
-        (v >= 0) & (v < HEIGHT) &
-        (z > 0)
-    )
-
-    # Prepare image (pure black background)
-    img = Image.new("RGB", (WIDTH, HEIGHT), (0, 0, 0))
-    draw = ImageDraw.Draw(img)
-
-    if np.any(visible):
-        u_vis = u[visible]
-        v_vis = v[visible]
-        z_vis = z[visible]
-        sizek_vis = stars_sizek[visible]
-        L_vis = stars_L[visible]
-
-        # Pure inverse-square apparent brightness; no extra fade terms
-        brightness = brightness_from_depth(z_vis, L_vis)
-        radii = radius_from_depth(z_vis, sizek_vis)
-
-        # Draw stars as small filled circles (grayscale)
-        for (xpix, ypix, b, r) in zip(u_vis, v_vis, brightness, radii):
-            x0 = int(xpix - r)
-            y0 = int(ypix - r)
-            x1 = int(xpix + r)
-            y1 = int(ypix + r)
-            col = (int(b), int(b), int(b))
-            draw.ellipse((x0, y0, x1, y1), fill=col)
-
-    # Save frame
-    img.save(os.path.join(OUT_DIR, f"frame_{frame:04d}.png"))
-
-    if (frame + 1) % 30 == 0 or frame == 0:
-        print(f"Rendered frame {frame + 1}/{N_FRAMES} ({(frame + 1) / FPS:.1f}s)")
-
-print(f"Done. {N_FRAMES} frames written to: {os.path.abspath(OUT_DIR)}")
-print("Tip: Use ffmpeg to make a video, e.g.:")
-print(f'ffmpeg -y -framerate {FPS} -i {OUT_DIR}/frame_%04d.png -pix_fmt yuv420p starfield.mp4')
+    l
