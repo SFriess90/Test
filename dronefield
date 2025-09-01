@@ -1,0 +1,141 @@
+# starfield_flythrough.py
+# Creates PNG frames in ./frames that resemble flying forward through a starfield.
+# Requirements: Pillow, numpy  (pip install pillow numpy)
+
+import os
+import math
+import numpy as np
+from PIL import Image, ImageDraw
+
+# --------------------------
+# Tunable parameters
+# --------------------------
+WIDTH, HEIGHT     = 1280, 720     # output resolution
+FPS               = 30            # purely for naming/your reference
+N_FRAMES          = 300           # total frames to render
+N_STARS           = 5000          # total stars in the volume
+FOV_DEG           = 70            # camera vertical field of view
+NEAR_Z            = 2.0           # near "spawn"/wrap plane (in front of camera)
+FAR_Z             = 60.0          # far plane (spawn depth)
+SPEED_PER_FRAME   = 0.6           # forward movement per frame along +z
+SEED              = 7             # RNG seed for reproducibility
+
+# Brightness/size controls
+MIN_BRIGHTNESS    = 40            # 0..255 at the far plane
+MAX_BRIGHTNESS    = 255           # clamp at near distances
+SIZE_SCALE        = 0.12          # scales apparent radius with distance
+MIN_RADIUS        = 0.5           # in pixels
+MAX_RADIUS        = 2.2           # in pixels
+GAMMA             = 2.2           # simple gamma for brightness mapping
+
+OUT_DIR = "frames"
+
+# --------------------------
+# Setup
+# --------------------------
+np.random.seed(SEED)
+os.makedirs(OUT_DIR, exist_ok=True)
+
+# Perspective focal length (in pixels) based on vertical FOV
+fov_rad = math.radians(FOV_DEG)
+f = 0.5 * HEIGHT / math.tan(0.5 * fov_rad)
+
+# Choose a world-space spawn cube that comfortably covers the FOV at FAR_Z
+# Max visible x/y at FAR_Z (add margin so stars appear from off-screen too)
+spread_xy = (FAR_Z * math.tan(0.5 * fov_rad)) * (WIDTH / HEIGHT) * 1.2
+
+# Initialize star positions uniformly in a rectangular prism
+# z distributed between NEAR_Z and FAR_Z so we see a dense field at start.
+stars_x = np.random.uniform(-spread_xy, spread_xy, size=N_STARS)
+stars_y = np.random.uniform(-spread_xy, spread_xy, size=N_STARS)
+stars_z = np.random.uniform(NEAR_Z, FAR_Z,     size=N_STARS)
+
+def respawn_indices(idx):
+    """Respawn stars that passed the camera, placing them back near FAR_Z with random x/y."""
+    # Push them somewhere in the far third for smoother distribution
+    stars_z[idx] = np.random.uniform(FAR_Z * 0.75, FAR_Z, size=idx.size)
+    stars_x[idx] = np.random.uniform(-spread_xy, spread_xy, size=idx.size)
+    stars_y[idx] = np.random.uniform(-spread_xy, spread_xy, size=idx.size)
+
+def brightness_from_depth(z):
+    """
+    Distance-based brightness: scale ~ 1 / z^2 (normalized so far plane = MIN_BRIGHTNESS).
+    Then apply a simple gamma to look nicer on screen.
+    """
+    # Normalize inverse-square so value is 1 at far plane, grows as (FAR/z)^2
+    invsq_norm = (FAR_Z / z) ** 2
+    raw = MIN_BRIGHTNESS + (MAX_BRIGHTNESS - MIN_BRIGHTNESS) * np.clip(invsq_norm, 0.0, 1.0)
+    # Gamma "encoding" to spread midtones (optional but pretty)
+    raw_01 = np.clip(raw / 255.0, 0.0, 1.0)
+    gamma_01 = np.power(raw_01, 1.0 / GAMMA)
+    return (gamma_01 * 255.0).astype(np.uint8)
+
+def radius_from_depth(z):
+    """Slightly increase star size as it gets closer (clamped)."""
+    r = SIZE_SCALE * (FAR_Z / z)
+    return np.clip(r, MIN_RADIUS, MAX_RADIUS)
+
+# --------------------------
+# Render frames
+# --------------------------
+for frame in range(N_FRAMES):
+    # Move camera forward (+z), which decreases star z relative to camera
+    stars_z -= SPEED_PER_FRAME
+
+    # Wrap/respawn stars that have reached or crossed the near plane
+    to_respawn = np.where(stars_z <= NEAR_Z)[0]
+    if to_respawn.size > 0:
+        respawn_indices(to_respawn)
+
+    # Perspective projection to screen space
+    # u = fx * x/z + cx, v = fy * y/z + cy; here fx=fy=f
+    z = stars_z
+    invz = 1.0 / z
+    u = (stars_x * f) * invz + (WIDTH  * 0.5)
+    v = (stars_y * f) * invz + (HEIGHT * 0.5)
+
+    # Visibility mask (on-screen)
+    visible = (
+        (u >= 0) & (u < WIDTH) &
+        (v >= 0) & (v < HEIGHT) &
+        (z > 0)   # just in case
+    )
+    if not np.any(visible):
+        # Unlikely, but handle degenerate cases
+        img = Image.new("RGB", (WIDTH, HEIGHT), (0, 0, 0))
+        img.save(os.path.join(OUT_DIR, f"frame_{frame:04d}.png"))
+        continue
+
+    u_vis = u[visible]
+    v_vis = v[visible]
+    z_vis = z[visible]
+
+    # Distance-based brightness & apparent radius
+    brightness = brightness_from_depth(z_vis)
+    radii = radius_from_depth(z_vis)
+
+    # Create a black background image
+    img = Image.new("RGB", (WIDTH, HEIGHT), (0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    # Draw points (tiny filled circles). Pillow has no vectorized draw; loop is fine.
+    # If you have very large N_STARS and need speed, consider batching by radius or using NumPy canvas tricks.
+    for (xpix, ypix, b, r) in zip(u_vis, v_vis, brightness, radii):
+        # Define a small ellipse centered at (xpix, ypix)
+        x0 = int(xpix - r)
+        y0 = int(ypix - r)
+        x1 = int(xpix + r)
+        y1 = int(ypix + r)
+        col = (int(b), int(b), int(b))  # grayscale star
+        draw.ellipse((x0, y0, x1, y1), fill=col)
+
+    # Save frame
+    img.save(os.path.join(OUT_DIR, f"frame_{frame:04d}.png"))
+
+    # (Optional) simple progress print
+    if (frame + 1) % 30 == 0 or frame == 0:
+        print(f"Rendered frame {frame + 1}/{N_FRAMES} ({(frame + 1) / FPS:.1f}s)")
+
+print(f"Done. {N_FRAMES} frames written to: {os.path.abspath(OUT_DIR)}")
+print("Tip: Use ffmpeg to make a video, e.g.:")
+print(f'ffmpeg -y -framerate {FPS} -i {OUT_DIR}/frame_%04d.png -pix_fmt yuv420p starfield.mp4')
