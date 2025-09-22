@@ -1,0 +1,115 @@
+# Rerun lighter-weight demos to complete within time limits.
+import numpy as np
+from PIL import Image, ImageDraw
+import imageio.v2 as imageio
+import math
+
+def normalize(v):
+    n = np.linalg.norm(v)
+    if n == 0:
+        return v
+    return v / n
+
+def look_at(camera_pos, target, up=np.array([0.0,0.0,1.0])):
+    z_axis = normalize(target - camera_pos)
+    x_axis = normalize(np.cross(z_axis, up))
+    if np.linalg.norm(x_axis) < 1e-8:
+        up = normalize(np.array([0.0,1e-3,1.0]))
+        x_axis = normalize(np.cross(z_axis, up))
+    y_axis = np.cross(z_axis, x_axis)
+    R = np.vstack([x_axis, y_axis, z_axis])
+    t = -R @ camera_pos
+    return R, t
+
+def project_points(Pw, R, t, fx, fy, cx, cy, z_near=1e-3):
+    Pc = (R @ Pw.T).T + t
+    zc = Pc[:,2]
+    in_front = zc > z_near
+    inv_z = np.zeros_like(zc)
+    inv_z[in_front] = 1.0 / zc[in_front]
+    u = fx * Pc[:,0] * inv_z + cx
+    v = fy * Pc[:,1] * inv_z + cy
+    return u, v, zc, in_front
+
+def generate_plane_points(n_points=12000, area_half_extent=450.0, seed=7):
+    rng = np.random.default_rng(seed)
+    x = rng.uniform(-area_half_extent, area_half_extent, size=n_points)
+    y = rng.uniform(-area_half_extent, area_half_extent, size=n_points)
+    z = np.zeros_like(x)
+    albedo = rng.uniform(0.5, 0.9, size=n_points)
+    return np.stack([x,y,z], axis=1), albedo
+
+def render_frame(points_world, albedo, camera_pos, target, img_w=720, img_h=405,
+                 fov_y_deg=60.0, size_scale=1400.0, brightness_scale=3.0, eps=4.0,
+                 max_pt_radius=6.0, bg=0):
+    fy = 0.5 * img_h / math.tan(math.radians(fov_y_deg*0.5))
+    fx = fy
+    cx, cy = img_w * 0.5, img_h * 0.5
+    R, t = look_at(camera_pos, target)
+    u, v, zc, in_front = project_points(points_world, R, t, fx, fy, cx, cy, z_near=1e-3)
+    on_screen = (u >= -30) & (u < img_w+30) & (v >= -30) & (v < img_h+30)
+    mask = in_front & on_screen
+    if not np.any(mask):
+        return Image.new("L", (img_w, img_h), color=bg)
+    u = u[mask]; v = v[mask]; zc = zc[mask]
+    Pw_vis = points_world[mask]
+    d2 = np.sum((Pw_vis - camera_pos)**2, axis=1)
+    inv_quad = 1.0 / (d2 + eps)
+    radii = np.clip(size_scale * inv_quad, 0.5, max_pt_radius)
+    alb = albedo[mask]
+    brightness = np.clip(alb + brightness_scale * inv_quad, 0.0, 1.0)
+    pix_vals = (brightness * 255.0).astype(np.uint8)
+    order = np.argsort(zc)[::-1]
+    u = u[order]; v = v[order]; radii = radii[order]; pix_vals = pix_vals[order]
+    img = Image.new("L", (img_w, img_h), color=bg)
+    draw = ImageDraw.Draw(img, 'L')
+    for x, y, r, val in zip(u, v, radii, pix_vals):
+        x0 = int(x - r); y0 = int(y - r)
+        x1 = int(x + r); y1 = int(y + r)
+        draw.ellipse((x0, y0, x1, y1), fill=int(val))
+    return img
+
+def fly_towards_point(points_world, albedo, incident_angle_deg=15.0, start_height=80.0,
+                      speed_per_frame=6.0, n_frames=60, target=np.array([0.0,0.0,0.0]),
+                      img_w=720, img_h=405, fov_y_deg=60.0,
+                      size_scale=1400.0, brightness_scale=3.0, eps=4.0,
+                      max_pt_radius=6.0, bg=0, out_path="/mnt/data/out.gif", fps=24):
+    theta = math.radians(incident_angle_deg)
+    d0 = start_height / max(math.sin(theta), 1e-6)
+    frames = []
+    for i in range(n_frames):
+        d = max(d0 - speed_per_frame * i, 2.0)
+        x = -d * math.cos(theta)
+        z =  d * math.sin(theta)
+        camera_pos = np.array([x, 0.0, z])
+        img = render_frame(points_world, albedo, camera_pos, target,
+                           img_w=img_w, img_h=img_h, fov_y_deg=fov_y_deg,
+                           size_scale=size_scale, brightness_scale=brightness_scale,
+                           eps=eps, max_pt_radius=max_pt_radius, bg=bg)
+        frames.append(np.array(img))
+    imageio.mimsave(out_path, frames, duration=1.0/fps)
+    return out_path
+
+# Generate scene
+points, albedo = generate_plane_points(n_points=12000, area_half_extent=450.0, seed=11)
+
+common = dict(
+    img_w=720, img_h=405,
+    fov_y_deg=60.0,
+    size_scale=1400.0,
+    brightness_scale=3.0,
+    eps=4.0,
+    max_pt_radius=6.0,
+    n_frames=60,
+    fps=24
+)
+
+outs = []
+outs.append(fly_towards_point(points, albedo, incident_angle_deg=10.0, start_height=50.0,
+                              speed_per_frame=6.0, out_path="/mnt/data/fly_flat_10deg.gif", **common))
+outs.append(fly_towards_point(points, albedo, incident_angle_deg=45.0, start_height=100.0,
+                              speed_per_frame=7.0, out_path="/mnt/data/fly_mid_45deg.gif", **common))
+outs.append(fly_towards_point(points, albedo, incident_angle_deg=80.0, start_height=150.0,
+                              speed_per_frame=5.0, out_path="/mnt/data/fly_steep_80deg.gif", **common))
+
+outs
