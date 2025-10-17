@@ -1,0 +1,35 @@
+import os
+import re
+
+def remove_and_renumber_pngs(folder_path):
+    # Get all PNG files that are named like "number.png"
+    files = [f for f in os.listdir(folder_path) if re.match(r'^\d+\.png$', f)]
+    
+    # Sort numerically
+    files.sort(key=lambda x: int(re.match(r'(\d+)', x).group(1)))
+    
+    # Full paths
+    full_paths = [os.path.join(folder_path, f) for f in files]
+    
+    # Remove every second image (2nd, 4th, 6th, ...)
+    remaining_files = [f for i, f in enumerate(full_paths, start=1) if i % 2 != 0]
+    
+    # Delete the even-numbered ones
+    for i, f in enumerate(full_paths, start=1):
+        if i % 2 == 0:
+            os.remove(f)
+            print(f"Removed: {os.path.basename(f)}")
+    
+    # Renumber the remaining ones
+    for new_index, old_path in enumerate(remaining_files, start=1):
+        new_name = f"{new_index}.png"
+        new_path = os.path.join(folder_path, new_name)
+        os.rename(old_path, new_path)
+        print(f"Renamed: {os.path.basename(old_path)} → {new_name}")
+    
+    print("\n✅ Done! Images renumbered and every second one removed.")
+
+# Example usage:
+if __name__ == "__main__":
+    folder = input("Enter folder path: ").strip()
+    remove_and_renumber_pngs(folder)
