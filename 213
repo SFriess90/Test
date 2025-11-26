@@ -1,0 +1,103 @@
+import numpy as np
+from scipy.optimize import linear_sum_assignment
+
+
+class Track:
+    def __init__(self, track_id, bbox, centroid):
+        self.id = track_id
+        self.bbox = bbox          # (x, y, w, h)
+        self.centroid = centroid  # (cx, cy)
+        self.missed = 0           # how many consecutive frames not matched
+
+
+class Tracker:
+    def __init__(self, max_distance=50, max_missed=5):
+        """
+        max_distance: max allowed distance (in pixels) between a track and a detection
+                      to be considered a valid match.
+        max_missed:   how many frames a track can go unmatched before being removed.
+        """
+        self.tracks = []
+        self.next_id = 0
+        self.max_distance = max_distance
+        self.max_missed = max_missed
+
+    def update(self, rects, centroids):
+        """
+        rects:     list of (x, y, w, h) for the current frame
+        centroids: list of (cx, cy) corresponding to rects (same order/length)
+
+        returns: list of (track_id, bbox, centroid) for active tracks
+        """
+        assert len(rects) == len(centroids), "rects and centroids must have same length"
+
+        if len(self.tracks) == 0:
+            # No active tracks yet: create one per detection
+            for bbox, c in zip(rects, centroids):
+                self.tracks.append(Track(self.next_id, bbox, c))
+                self.next_id += 1
+        else:
+            if len(rects) > 0:
+                # Build cost matrix: distance between track centroids and detection centroids
+                track_centers = np.array([t.centroid for t in self.tracks])   # (T, 2)
+                det_centers = np.array(centroids)                             # (D, 2)
+
+                cost = np.linalg.norm(
+                    track_centers[:, None, :] - det_centers[None, :, :],
+                    axis=2
+                )  # shape (T, D)
+
+                # Hungarian algorithm: minimal-cost assignment
+                row_ind, col_ind = linear_sum_assignment(cost)
+
+                assigned_tracks = set()
+                assigned_dets = set()
+
+                # Apply matches with gating on max_distance
+                for r, c in zip(row_ind, col_ind):
+                    if cost[r, c] <= self.max_distance:
+                        self.tracks[r].bbox = rects[c]
+                        self.tracks[r].centroid = centroids[c]
+                        self.tracks[r].missed = 0
+                        assigned_tracks.add(r)
+                        assigned_dets.add(c)
+
+                # Increase missed counter for unmatched tracks
+                for i, t in enumerate(self.tracks):
+                    if i not in assigned_tracks:
+                        t.missed += 1
+
+                # Remove tracks that have been missed too long
+                self.tracks = [t for t in self.tracks if t.missed <= self.max_missed]
+
+                # Create new tracks for unmatched detections
+                for i, (bbox, c) in enumerate(zip(rects, centroids)):
+                    if i not in assigned_dets:
+                        self.tracks.append(Track(self.next_id, bbox, c))
+                        self.next_id += 1
+            else:
+                # No detections this frame: mark all tracks as missed
+                for t in self.tracks:
+                    t.missed += 1
+                self.tracks = [t for t in self.tracks if t.missed <= self.max_missed]
+
+        # Return active tracks
+        return [(t.id, t.bbox, t.centroid) for t in self.tracks]
+
+
+def track_sequence(frames, max_distance=50, max_missed=5):
+    """
+    frames: list of (frame_idx, [rects], [centroids])
+        - rects:     list of (x, y, w, h)
+        - centroids: list of (cx, cy), same length/order as rects
+
+    returns: list of (frame_idx, [(track_id, bbox, centroid), ...])
+    """
+    tracker = Tracker(max_distance=max_distance, max_missed=max_missed)
+    results = []
+
+    for frame_idx, rects, centroids in frames:
+        tracked = tracker.update(rects, centroids)
+        results.append((frame_idx, tracked))
+
+    return results
