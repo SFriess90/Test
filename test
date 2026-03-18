@@ -1,68 +1,72 @@
 from pathlib import Path
 import shutil
-import sys
 
 
-def flatten_annotations(sequences_dir: str) -> None:
-    """
-    For a folder structure like:
-        sequences/
-            trial01/
-                annotations/
-                    instances_default.json
-            trial02/
-                annotations/
-                    instances_default.json
+def flatten_sequences(root: str = ".") -> None:
+    base = Path(root).resolve()
+    sequences_dir = base / "sequences"
+    out_annotations = base / "annotations"
+    out_videos = base / "videos"
 
-    This will create:
-        sequences/
-            annotations/
-                trial01.json
-                trial02.json
+    if not sequences_dir.is_dir():
+        raise FileNotFoundError(f"Missing folder: {sequences_dir}")
 
-    Then it deletes each original:
-        sequences/trialXX/annotations/
-    """
-    sequences_path = Path(sequences_dir).resolve()
+    out_annotations.mkdir(exist_ok=True)
+    out_videos.mkdir(exist_ok=True)
 
-    if not sequences_path.is_dir():
-        raise NotADirectoryError(f"Not a valid directory: {sequences_path}")
-
-    target_superfolder = sequences_path / "annotations"
-    target_superfolder.mkdir(exist_ok=True)
-
-    for trial_dir in sequences_path.iterdir():
+    for trial_dir in sequences_dir.iterdir():
         if not trial_dir.is_dir():
             continue
 
-        if trial_dir.name == "annotations":
-            continue
+        trial_name = trial_dir.name
 
-        source_annotations_dir = trial_dir / "annotations"
-        source_json = source_annotations_dir / "instances_default.json"
+        # --- 1) Handle annotations JSON ---
+        src_annotations_dir = trial_dir / "annotations"
+        src_json = src_annotations_dir / "instances_default.json"
+        dst_json = out_annotations / f"{trial_name}.json"
 
-        if not source_annotations_dir.is_dir():
-            print(f"Skipping {trial_dir.name}: no 'annotations' folder")
-            continue
+        if src_json.is_file():
+            shutil.copy2(src_json, dst_json)
+            shutil.rmtree(src_annotations_dir)
+            print(f"Copied JSON: {src_json} -> {dst_json}")
+            print(f"Deleted folder: {src_annotations_dir}")
+        else:
+            print(f"Skipped JSON for {trial_name}: {src_json} not found")
 
-        if not source_json.is_file():
-            print(f"Skipping {trial_dir.name}: no 'instances_default.json'")
-            continue
+        # --- 2) Handle video ---
+        src_video = trial_dir / "visualization.mp4"
+        dst_video = out_videos / f"{trial_name}.mp4"
 
-        target_json = target_superfolder / f"{trial_dir.name}.json"
+        if src_video.is_file():
+            shutil.copy2(src_video, dst_video)
+            src_video.unlink()
+            print(f"Copied video: {src_video} -> {dst_video}")
+            print(f"Deleted file: {src_video}")
+        else:
+            print(f"Skipped video for {trial_name}: {src_video} not found")
 
-        # Copy the JSON file
-        shutil.copy2(source_json, target_json)
-        print(f"Copied: {source_json} -> {target_json}")
+        # --- 3) Move images up one level ---
+        images_dir = trial_dir / "images"
 
-        # Delete the original annotations folder after successful copy
-        shutil.rmtree(source_annotations_dir)
-        print(f"Deleted: {source_annotations_dir}")
+        if images_dir.is_dir():
+            for item in images_dir.iterdir():
+                target = trial_dir / item.name
+
+                # If a file with same name exists, you can choose behavior:
+                if target.exists():
+                    raise FileExistsError(
+                        f"Conflict: {target} already exists while moving {item}"
+                    )
+
+                shutil.move(str(item), str(target))
+                print(f"Moved: {item} -> {target}")
+
+            # Remove the now-empty images folder
+            images_dir.rmdir()
+            print(f"Deleted empty folder: {images_dir}")
+        else:
+            print(f"No images folder for {trial_name}")
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python flatten_annotations.py /path/to/sequences")
-        sys.exit(1)
-
-    flatten_annotations(sys.argv[1])
+    flatten_sequences(".")
