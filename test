@@ -1,303 +1,53 @@
-from typing import Any, Dict, List, Tuple, Optional
-import json
-
-# Input shape assumed:
-# [
-#   (
-#     frame_counter,
-#     [
-#       (track_id, (bbox_x, bbox_y, bbox_w, bbox_h), (center_x, center_y)),
-#       ...
-#     ]
-#   ),
-#   ...
-# ]
-#
-# Example:
-# tracks = [
-#     (1, [
-#         (101, (50, 60, 100, 120), (100, 120)),
-#         (102, (200, 220, 80, 90), (240, 265)),
-#     ]),
-#     (2, [
-#         (101, (55, 65, 100, 120), (105, 125)),
-#     ])
-# ]
+from pathlib import Path
+from typing import Dict, Any, List, Tuple, Optional
+from PIL import Image
+import re
 
 
-def tracks_to_coco(
-    tracks: List[Tuple[int, List[Tuple[int, Tuple[float, float, float, float], Tuple[float, float]]]]],
-    image_width: Optional[int] = None,
-    image_height: Optional[int] = None,
-    category_id: int = 1,
-    category_name: str = "object",
-    image_file_template: str = "frame_{:06d}.jpg",
-    include_tracking_fields: bool = True,
-) -> Dict[str, Any]:
-    """
-    Convert per-frame tracking data into a COCO-style dictionary.
-
-    Parameters
-    ----------
-    tracks:
-        List of tuples:
-        [
-            (
-                frame_counter,
-                [
-                    (track_id, (x, y, w, h), (cx, cy)),
-                    ...
-                ]
-            ),
-            ...
-        ]
-
-    image_width, image_height:
-        Optional image dimensions. COCO usually expects these.
-        If unknown, they are set to 0.
-
-    category_id, category_name:
-        COCO category information.
-
-    image_file_template:
-        Template for file_name generation from frame counter.
-
-    include_tracking_fields:
-        If True, adds non-standard extra fields like "track_id" and "center".
-
-    Returns
-    -------
-    coco_dict:
-        A dictionary in COCO-style format.
-    """
-    coco = {
-        "images": [],
-        "annotations": [],
-        "categories": [
-            {
-                "id": category_id,
-                "name": category_name,
-                "supercategory": "object"
-            }
-        ]
-    }
-
-    annotation_id = 1
-
-    for frame_counter, frame_tracks in tracks:
-        image_id = frame_counter
-
-        coco["images"].append({
-            "id": image_id,
-            "file_name": image_file_template.format(frame_counter),
-            "width": image_width if image_width is not None else 0,
-            "height": image_height if image_height is not None else 0
-        })
-
-        for entry in frame_tracks:
-            if len(entry) < 3:
-                raise ValueError(
-                    f"Track entry in frame {frame_counter} must contain at least "
-                    f"(track_id, bbox, center). Got: {entry}"
-                )
-
-            track_id, bbox, center = entry[:3]
-            x, y, w, h = bbox
-            cx, cy = center
-
-            annotation = {
-                "id": annotation_id,
-                "image_id": image_id,
-                "category_id": category_id,
-                "bbox": [x, y, w, h],
-                "area": w * h,
-                "iscrowd": 0
-            }
-
-            # Optional non-standard fields useful for tracking workflows
-            if include_tracking_fields:
-                annotation["track_id"] = track_id
-                annotation["center"] = [cx, cy]
-
-            coco["annotations"].append(annotation)
-            annotation_id += 1
-
-    return coco
-
-
-if __name__ == "__main__":
-    tracks = [
-        (1, [
-            (101, (50, 60, 100, 120), (100, 120)),
-            (102, (200, 220, 80, 90), (240, 265)),
-        ]),
-        (2, [
-            (101, (55, 65, 100, 120), (105, 125)),
-            (103, (300, 100, 50, 70), (325, 135)),
-        ]),
+def natural_sort_key(path: Path):
+    return [
+        int(part) if part.isdigit() else part.lower()
+        for part in re.split(r"(\d+)", path.name)
     ]
 
-    coco_dict = tracks_to_coco(
-        tracks,
-        image_width=1920,
-        image_height=1080,
-        category_id=1,
-        category_name="person",
-        image_file_template="frame_{:06d}.jpg",
-        include_tracking_fields=True
-    )
 
-    print(json.dumps(coco_dict, indent=2))
-
-
-
-from typing import Any, Dict, List, Tuple, Optional
-import json
-
-# Input shape assumed:
-# [
-#   (
-#     frame_counter,
-#     [
-#       (track_id, (bbox_x, bbox_y, bbox_w, bbox_h), (center_x, center_y)),
-#       ...
-#     ]
-#   ),
-#   ...
-# ]
-#
-# Example:
-# tracks = [
-#     (1, [
-#         (101, (50, 60, 100, 120), (100, 120)),
-#         (102, (200, 220, 80, 90), (240, 265)),
-#     ]),
-#     (2, [
-#         (101, (55, 65, 100, 120), (105, 125)),
-#     ])
-# ]
-
-
-def tracks_to_coco(
-    tracks: List[Tuple[int, List[Tuple[int, Tuple[float, float, float, float], Tuple[float, float]]]]],
-    image_width: Optional[int] = None,
-    image_height: Optional[int] = None,
-    category_id: int = 1,
-    category_name: str = "object",
-    image_file_template: str = "frame_{:06d}.jpg",
-    include_tracking_fields: bool = True,
-) -> Dict[str, Any]:
+def build_coco_images_dict_with_size(
+    image_dir: str,
+    allowed_suffixes: Optional[Tuple[str, ...]] = (".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"),
+    use_full_path: bool = False,
+    start_image_id: int = 1,
+) -> Dict[str, List[Dict[str, Any]]]:
     """
-    Convert per-frame tracking data into a COCO-style dictionary.
-
-    Parameters
-    ----------
-    tracks:
-        List of tuples:
-        [
-            (
-                frame_counter,
-                [
-                    (track_id, (x, y, w, h), (cx, cy)),
-                    ...
-                ]
-            ),
-            ...
-        ]
-
-    image_width, image_height:
-        Optional image dimensions. COCO usually expects these.
-        If unknown, they are set to 0.
-
-    category_id, category_name:
-        COCO category information.
-
-    image_file_template:
-        Template for file_name generation from frame counter.
-
-    include_tracking_fields:
-        If True, adds non-standard extra fields like "track_id" and "center".
-
-    Returns
-    -------
-    coco_dict:
-        A dictionary in COCO-style format.
+    Build a COCO-style dictionary containing the 'images' section
+    and populate width/height from the actual image files.
     """
-    coco = {
-        "images": [],
-        "annotations": [],
-        "categories": [
-            {
-                "id": category_id,
-                "name": category_name,
-                "supercategory": "object"
-            }
-        ]
-    }
+    image_path = Path(image_dir)
 
-    annotation_id = 1
+    if not image_path.exists():
+        raise FileNotFoundError(f"Image directory does not exist: {image_dir}")
 
-    for frame_counter, frame_tracks in tracks:
-        image_id = frame_counter
+    if not image_path.is_dir():
+        raise NotADirectoryError(f"Expected a directory, got: {image_dir}")
 
-        coco["images"].append({
-            "id": image_id,
-            "file_name": image_file_template.format(frame_counter),
-            "width": image_width if image_width is not None else 0,
-            "height": image_height if image_height is not None else 0
-        })
+    suffixes = tuple(s.lower() for s in allowed_suffixes)
 
-        for entry in frame_tracks:
-            if len(entry) < 3:
-                raise ValueError(
-                    f"Track entry in frame {frame_counter} must contain at least "
-                    f"(track_id, bbox, center). Got: {entry}"
-                )
-
-            track_id, bbox, center = entry[:3]
-            x, y, w, h = bbox
-            cx, cy = center
-
-            annotation = {
-                "id": annotation_id,
-                "image_id": image_id,
-                "category_id": category_id,
-                "bbox": [x, y, w, h],
-                "area": w * h,
-                "iscrowd": 0
-            }
-
-            # Optional non-standard fields useful for tracking workflows
-            if include_tracking_fields:
-                annotation["track_id"] = track_id
-                annotation["center"] = [cx, cy]
-
-            coco["annotations"].append(annotation)
-            annotation_id += 1
-
-    return coco
-
-
-if __name__ == "__main__":
-    tracks = [
-        (1, [
-            (101, (50, 60, 100, 120), (100, 120)),
-            (102, (200, 220, 80, 90), (240, 265)),
-        ]),
-        (2, [
-            (101, (55, 65, 100, 120), (105, 125)),
-            (103, (300, 100, 50, 70), (325, 135)),
-        ]),
+    image_files = [
+        p for p in image_path.iterdir()
+        if p.is_file() and p.suffix.lower() in suffixes
     ]
 
-    coco_dict = tracks_to_coco(
-        tracks,
-        image_width=1920,
-        image_height=1080,
-        category_id=1,
-        category_name="person",
-        image_file_template="frame_{:06d}.jpg",
-        include_tracking_fields=True
-    )
+    image_files = sorted(image_files, key=natural_sort_key)
 
-    print(json.dumps(coco_dict, indent=2))
+    images = []
+    for idx, img_path in enumerate(image_files, start=start_image_id):
+        with Image.open(img_path) as img:
+            width, height = img.size
+
+        images.append({
+            "id": idx,
+            "file_name": str(img_path.resolve()) if use_full_path else img_path.name,
+            "width": width,
+            "height": height
+        })
+
+    return {"images": images}
