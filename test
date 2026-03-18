@@ -1,0 +1,68 @@
+from pathlib import Path
+import shutil
+import sys
+
+
+def flatten_annotations(sequences_dir: str) -> None:
+    """
+    For a folder structure like:
+        sequences/
+            trial01/
+                annotations/
+                    instances_default.json
+            trial02/
+                annotations/
+                    instances_default.json
+
+    This will create:
+        sequences/
+            annotations/
+                trial01.json
+                trial02.json
+
+    Then it deletes each original:
+        sequences/trialXX/annotations/
+    """
+    sequences_path = Path(sequences_dir).resolve()
+
+    if not sequences_path.is_dir():
+        raise NotADirectoryError(f"Not a valid directory: {sequences_path}")
+
+    target_superfolder = sequences_path / "annotations"
+    target_superfolder.mkdir(exist_ok=True)
+
+    for trial_dir in sequences_path.iterdir():
+        if not trial_dir.is_dir():
+            continue
+
+        if trial_dir.name == "annotations":
+            continue
+
+        source_annotations_dir = trial_dir / "annotations"
+        source_json = source_annotations_dir / "instances_default.json"
+
+        if not source_annotations_dir.is_dir():
+            print(f"Skipping {trial_dir.name}: no 'annotations' folder")
+            continue
+
+        if not source_json.is_file():
+            print(f"Skipping {trial_dir.name}: no 'instances_default.json'")
+            continue
+
+        target_json = target_superfolder / f"{trial_dir.name}.json"
+
+        # Copy the JSON file
+        shutil.copy2(source_json, target_json)
+        print(f"Copied: {source_json} -> {target_json}")
+
+        # Delete the original annotations folder after successful copy
+        shutil.rmtree(source_annotations_dir)
+        print(f"Deleted: {source_annotations_dir}")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python flatten_annotations.py /path/to/sequences")
+        sys.exit(1)
+
+    flatten_annotations(sys.argv[1])
