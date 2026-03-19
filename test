@@ -1,53 +1,30 @@
-from pathlib import Path
-from typing import Dict, Any, List, Tuple, Optional
-from PIL import Image
-import re
+import os
+import shutil
 
+base_dir = "/images"
 
-def natural_sort_key(path: Path):
-    return [
-        int(part) if part.isdigit() else part.lower()
-        for part in re.split(r"(\d+)", path.name)
-    ]
+for folder_name in os.listdir(base_dir):
+    folder_path = os.path.join(base_dir, folder_name)
 
+    # Skip if not a directory
+    if not os.path.isdir(folder_path):
+        continue
 
-def build_coco_images_dict_with_size(
-    image_dir: str,
-    allowed_suffixes: Optional[Tuple[str, ...]] = (".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"),
-    use_full_path: bool = False,
-    start_image_id: int = 1,
-) -> Dict[str, List[Dict[str, Any]]]:
-    """
-    Build a COCO-style dictionary containing the 'images' section
-    and populate width/height from the actual image files.
-    """
-    image_path = Path(image_dir)
+    default_path = os.path.join(folder_path, "default")
 
-    if not image_path.exists():
-        raise FileNotFoundError(f"Image directory does not exist: {image_dir}")
+    # Create /images/XXXXXX/default if it doesn't exist
+    os.makedirs(default_path, exist_ok=True)
 
-    if not image_path.is_dir():
-        raise NotADirectoryError(f"Expected a directory, got: {image_dir}")
+    for item in os.listdir(folder_path):
+        item_path = os.path.join(folder_path, item)
 
-    suffixes = tuple(s.lower() for s in allowed_suffixes)
+        # Skip the "default" folder itself
+        if item == "default":
+            continue
 
-    image_files = [
-        p for p in image_path.iterdir()
-        if p.is_file() and p.suffix.lower() in suffixes
-    ]
+        # Move files (and optionally folders)
+        target_path = os.path.join(default_path, item)
 
-    image_files = sorted(image_files, key=natural_sort_key)
+        shutil.move(item_path, target_path)
 
-    images = []
-    for idx, img_path in enumerate(image_files, start=start_image_id):
-        with Image.open(img_path) as img:
-            width, height = img.size
-
-        images.append({
-            "id": idx,
-            "file_name": str(img_path.resolve()) if use_full_path else img_path.name,
-            "width": width,
-            "height": height
-        })
-
-    return {"images": images}
+print("Done.")
