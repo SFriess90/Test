@@ -1,30 +1,64 @@
 import os
-import shutil
 
-base_dir = "/images"
+def load_annotations_to_coco(anno_file_path):
+    coco_annotations = []
+    annotation_id = 1  # unique ID for each annotation
 
-for folder_name in os.listdir(base_dir):
-    folder_path = os.path.join(base_dir, folder_name)
+    with open(anno_file_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
 
-    # Skip if not a directory
-    if not os.path.isdir(folder_path):
-        continue
+            parts = line.split(',')
+            if len(parts) != 6:
+                raise ValueError(f"Invalid line format: {line}")
 
-    default_path = os.path.join(folder_path, "default")
+            frame_id = int(parts[0])
+            x = float(parts[1])
+            y = float(parts[2])
+            w = float(parts[3])
+            h = float(parts[4])
+            brightness = float(parts[5])
 
-    # Create /images/XXXXXX/default if it doesn't exist
-    os.makedirs(default_path, exist_ok=True)
+            annotation = {
+                "id": annotation_id,
+                "image_id": frame_id,  # assuming frame_id maps to image_id
+                "category_id": 1,      # adjust if you have multiple classes
+                "bbox": [x, y, w, h],
+                "area": w * h,
+                "iscrowd": 0,
+                # optional custom field
+                "brightness": brightness
+            }
 
-    for item in os.listdir(folder_path):
-        item_path = os.path.join(folder_path, item)
+            coco_annotations.append(annotation)
+            annotation_id += 1
 
-        # Skip the "default" folder itself
-        if item == "default":
-            continue
+    return coco_annotations
 
-        # Move files (and optionally folders)
-        target_path = os.path.join(default_path, item)
 
-        shutil.move(item_path, target_path)
+if __name__ == "__main__":
+    anno_path = os.path.join("dataset", "gt", "anno.txt")
+    annotations = load_annotations_to_coco(anno_path)
 
-print("Done.")
+    # Example: print first few annotations
+    for ann in annotations[:5]:
+        print(ann)
+
+def load_images_to_coco_simple(sequence_path):
+    import os
+
+    image_files = sorted([
+        f for f in os.listdir(sequence_path)
+        if f.lower().endswith((".png", ".jpg", ".jpeg"))
+    ])
+
+    images = []
+    for idx, filename in enumerate(image_files, start=1):
+        images.append({
+            "id": idx,
+            "file_name": filename
+        })
+
+    return images
