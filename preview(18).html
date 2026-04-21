@@ -1,0 +1,1130 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ukrainian Letter Typer (RL Bandits + Miss-Bias + Threshold)</title>
+  <style>
+    :root { color-scheme: dark; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background:#0b0f1a;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    .wrap { height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
+    header, footer { padding: 10px 12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    header { border-bottom: 1px solid rgba(255,255,255,.08); }
+    footer { border-top: 1px solid rgba(255,255,255,.08); font-size: 13px; opacity:.9; }
+    main { position: relative; min-height: 0; overflow: hidden; }
+
+    .pill { padding: 6px 10px; border: 1px solid rgba(255,255,255,.12); border-radius: 999px; background: rgba(255,255,255,.04); }
+    .pill b { font-variant-numeric: tabular-nums; }
+    .controls { margin-left:auto; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+
+    button, select, input[type="range"]{
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.14);
+      color: #fff;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+    button { cursor:pointer; }
+    button:hover { background: rgba(255,255,255,.10); }
+    label { display:flex; gap:8px; align-items:center; }
+    canvas { width: 100%; height: 100%; display:block; }
+
+    .hint { opacity:.85; }
+    .kbd {
+      display:inline-block; padding:2px 6px; border-radius:6px;
+      border:1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.05);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .charts { display:flex; gap:10px; align-items:stretch; flex-wrap:wrap; }
+
+    .chartWrap{
+      display:flex; gap:10px; align-items:center;
+      padding: 6px 10px; border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px; background: rgba(255,255,255,.035);
+    }
+    #chart{
+      width: 260px; height: 80px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+    #bars{
+      width: 420px; height: 120px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+    .chartText{
+      display:flex; flex-direction:column; gap:2px;
+      font-size: 12px; opacity: .95;
+      min-width: 210px;
+    }
+    .mono{ font-variant-numeric: tabular-nums; }
+    .tiny{ opacity:.85; font-size: 11px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="pill">Score: <b id="score">0</b></div>
+    <div class="pill">Streak: <b id="streak">0</b></div>
+    <div class="pill">Misses: <b id="misses">0</b></div>
+    <div class="pill">Level: <b id="level">1</b></div>
+
+    <div class="controls">
+      <button id="btnStart">Start</button>
+      <button id="btnPause" disabled>Pause</button>
+      <button id="btnReset">Reset</button>
+
+      <label class="pill">
+        Mode
+        <select id="mode">
+          <option value="single" selected>Single letter only</option>
+          <option value="multi">Multiple letters</option>
+        </select>
+      </label>
+
+      <label class="pill">
+        Difficulty
+        <select id="difficulty">
+          <option value="easy" selected>Easy</option>
+          <option value="normal">Normal</option>
+          <option value="hard">Hard</option>
+        </select>
+      </label>
+
+      <label class="pill">
+        Speed
+        <input id="speed" type="range" min="50" max="200" value="100" />
+        <span class="mono" id="speedLbl">100%</span>
+      </label>
+
+      <label class="pill">
+        Window
+        <select id="window">
+          <option value="10">Last 10</option>
+          <option value="25">Last 25</option>
+          <option value="50">Last 50</option>
+          <option value="100">Last 100</option>
+          <option value="200">Last 200</option>
+          <option value="500" selected>Last 500</option>
+          <option value="1000">Last 1000</option>
+          <option value="all">All</option>
+        </select>
+      </label>
+
+      <label class="pill">
+        RL mode
+        <input id="rl" type="range" min="0" max="100" value="0" />
+        <span class="mono" id="rlLbl">0%</span>
+      </label>
+
+      <label class="pill">
+        Miss bias
+        <input id="bias" type="range" min="0" max="100" value="50" />
+        <span class="mono" id="biasLbl">2.50×</span>
+      </label>
+
+      <label class="pill">
+        Miss ≥
+        <input id="thr" type="range" min="0" max="100" value="0" />
+        <span class="mono" id="thrLbl">0%</span>
+      </label>
+
+      <label class="pill">
+        Sound
+        <select id="sound">
+          <option value="on" selected>On</option>
+          <option value="off">Off</option>
+        </select>
+      </label>
+
+      <label class="pill">
+        Volume
+        <input id="vol" type="range" min="0" max="100" value="40" />
+      </label>
+
+      <div class="charts">
+        <div class="chartWrap">
+          <canvas id="chart" width="520" height="160"></canvas>
+          <div class="chartText">
+            <div><b class="mono" id="winLbl">Window (500)</b></div>
+            <div>Hit: <b class="mono" id="hitWin">0%</b>  Miss: <b class="mono" id="missWin">0%</b></div>
+            <div class="tiny">Overall avg</div>
+            <div>Hit: <b class="mono" id="hitAll">0%</b>  Miss: <b class="mono" id="missAll">0%</b></div>
+            <div class="tiny"><span style="color:#42f587;">■</span> rolling/cumulative hit &nbsp; <span style="color:#ff4d4d;">■</span> miss</div>
+            <div class="tiny">Dashed lines = overall averages</div>
+          </div>
+        </div>
+
+        <div class="chartWrap">
+          <canvas id="bars" width="840" height="240"></canvas>
+          <div class="chartText" style="min-width:260px;">
+            <div><b>Per-letter hit rate</b></div>
+            <div class="tiny">Bars = rolling window (green)</div>
+            <div class="tiny">Marker = all-time avg (white tick)</div>
+            <div class="tiny">RL uses ALL-TIME stats</div>
+            <div class="tiny mono" id="rlInfo">miss^2.50 • unc×0.65 • floor 2% • thr 0%</div>
+            <div class="tiny">If threshold filters all letters, it auto-sets to max miss in pool</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main><canvas id="c"></canvas></main>
+
+  <footer>
+    <span class="hint">
+      Type the falling <b>Ukrainian letters</b>. Matching letter “pops” it.
+      <span class="kbd">Enter</span> starts/pauses. <span class="kbd">Esc</span> resets.
+    </span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const UA = ["а","б","в","г","ґ","д","е","є","ж","з","и","і","ї","й","к","л","м","н","о","п","р","с","т","у","ф","х","ц","ч","ш","щ","ю","я"];
+  const idxOf = new Map(UA.map((ch,i)=>[ch,i]));
+  const EASY_POOL = ["а","о","л","д","ж","і","в","и","т","н","р","п"];
+  const NORMAL_POOL = UA.slice();
+  const HARD_POOL = UA.slice();
+
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+
+  const chart = document.getElementById("chart");
+  const g = chart.getContext("2d");
+
+  const bars = document.getElementById("bars");
+  const gb = bars.getContext("2d");
+
+  const elWinLbl = document.getElementById("winLbl");
+  const elHitWin = document.getElementById("hitWin");
+  const elMissWin = document.getElementById("missWin");
+  const elHitAll = document.getElementById("hitAll");
+  const elMissAll = document.getElementById("missAll");
+
+  const elScore = document.getElementById("score");
+  const elStreak = document.getElementById("streak");
+  const elMisses = document.getElementById("misses");
+  const elLevel = document.getElementById("level");
+
+  const btnStart = document.getElementById("btnStart");
+  const btnPause = document.getElementById("btnPause");
+  const btnReset = document.getElementById("btnReset");
+
+  const selMode = document.getElementById("mode");
+  const selDifficulty = document.getElementById("difficulty");
+  const selSound = document.getElementById("sound");
+  const rngVol = document.getElementById("vol");
+
+  const rngSpeed = document.getElementById("speed");
+  const elSpeedLbl = document.getElementById("speedLbl");
+  const selWindow = document.getElementById("window");
+
+  const rngRL = document.getElementById("rl");
+  const elRLLbl = document.getElementById("rlLbl");
+
+  const rngBias = document.getElementById("bias");
+  const elBiasLbl = document.getElementById("biasLbl");
+
+  const rngThr = document.getElementById("thr");
+  const elThrLbl = document.getElementById("thrLbl");
+
+  const elRLInfo = document.getElementById("rlInfo");
+
+  function speedFactor() { return Math.max(0.5, Math.min(2.0, Number(rngSpeed.value) / 100)); }
+  function updateSpeedLabel() { elSpeedLbl.textContent = `${Math.round(speedFactor()*100)}%`; }
+  rngSpeed.addEventListener("input", updateSpeedLabel);
+  updateSpeedLabel();
+
+  function rlMix() { return Math.max(0, Math.min(1, Number(rngRL.value)/100)); }
+  function updateRLLbl() { elRLLbl.textContent = `${Math.round(rlMix()*100)}%`; }
+  rngRL.addEventListener("input", () => { updateRLLbl(); drawBarChart(); });
+  updateRLLbl();
+
+  // 0..100 -> exponent 1..4
+  function missEmphasis() {
+    const t = Math.max(0, Math.min(1, Number(rngBias.value)/100));
+    return 1.0 + 3.0 * t;
+  }
+  // bias up -> uncertainty down
+  function uncWeight() {
+    const t = Math.max(0, Math.min(1, Number(rngBias.value)/100));
+    return 0.85 - 0.60 * t;
+  }
+  const UNIFORM_FLOOR = 0.02;
+
+  function missThreshold() {
+    return Math.max(0, Math.min(1, Number(rngThr.value)/100));
+  }
+
+  function updateRLInfo() {
+    elRLInfo.textContent =
+      `miss^${missEmphasis().toFixed(2)} • unc×${uncWeight().toFixed(2)} • floor ${Math.round(UNIFORM_FLOOR*100)}% • thr ${Math.round(missThreshold()*100)}%`;
+  }
+
+  function updateBiasLbl() {
+    elBiasLbl.textContent = `${missEmphasis().toFixed(2)}×`;
+    updateRLInfo();
+  }
+  function updateThrLbl() {
+    elThrLbl.textContent = `${Math.round(missThreshold()*100)}%`;
+    updateRLInfo();
+  }
+
+  rngBias.addEventListener("input", () => { updateBiasLbl(); drawBarChart(); });
+  rngThr.addEventListener("input", () => { updateThrLbl(); drawBarChart(); });
+  updateBiasLbl();
+  updateThrLbl();
+
+  // Audio
+  let audioCtx = null, masterGain = null;
+  function ensureAudio() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive", sampleRate: 48000 });
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = volume();
+    masterGain.connect(audioCtx.destination);
+  }
+  function volume() { return Math.max(0, Math.min(1, Number(rngVol.value) / 100)); }
+  rngVol.addEventListener("input", () => { if (masterGain) masterGain.gain.value = volume(); });
+
+  let W=0, H=0, dpr=1;
+  function resize() {
+    dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    const rect = canvas.getBoundingClientRect();
+    W = Math.floor(rect.width * dpr);
+    H = Math.floor(rect.height * dpr);
+    canvas.width = W;
+    canvas.height = H;
+  }
+  window.addEventListener("resize", resize);
+
+  function panForX(x) {
+    const t = (x / W) * 2 - 1;
+    return Math.max(-0.9, Math.min(0.9, t));
+  }
+
+  function playOsc({type="sine", freq=440, dur=0.08, gain=0.15, pan=0}) {
+    if (selSound.value === "off") return;
+    ensureAudio();
+    const t0 = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gg = audioCtx.createGain();
+    const p = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+
+    gg.gain.setValueAtTime(0.0001, t0);
+    gg.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain * volume()), t0 + 0.006);
+    gg.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+    if (p) { p.pan.setValueAtTime(pan, t0); osc.connect(gg).connect(p).connect(masterGain); }
+    else { osc.connect(gg).connect(masterGain); }
+
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.02);
+  }
+
+  function playNoise({dur=0.06, gain=0.12, pan=0, hp=800, lp=8000}) {
+    if (selSound.value === "off") return;
+    ensureAudio();
+    const t0 = audioCtx.currentTime;
+    const len = Math.max(1, Math.floor(audioCtx.sampleRate * dur));
+    const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i=0;i<len;i++) data[i] = (Math.random()*2-1) * (1 - i/len);
+
+    const src = audioCtx.createBufferSource(); src.buffer = buf;
+
+    const gg = audioCtx.createGain();
+    const hpF = audioCtx.createBiquadFilter();
+    const lpF = audioCtx.createBiquadFilter();
+    hpF.type = "highpass"; hpF.frequency.value = hp;
+    lpF.type = "lowpass";  lpF.frequency.value = lp;
+
+    const p = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+    gg.gain.setValueAtTime(0.0001, t0);
+    gg.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain * volume()), t0 + 0.004);
+    gg.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+    if (p) { p.pan.setValueAtTime(pan, t0); src.connect(hpF).connect(lpF).connect(gg).connect(p).connect(masterGain); }
+    else { src.connect(hpF).connect(lpF).connect(gg).connect(masterGain); }
+
+    src.start(t0);
+    src.stop(t0 + dur + 0.02);
+  }
+
+  function sfxKey(pan=0) { playOsc({type:"triangle", freq: 2200, dur:0.02, gain:0.05, pan}); }
+  function sfxHit(pan=0) {
+    playOsc({type:"square", freq: 520, dur:0.06, gain:0.12, pan});
+    playOsc({type:"sine", freq: 1040, dur:0.05, gain:0.08, pan});
+    playNoise({dur:0.05, gain:0.07, pan, hp:1200, lp:9000});
+  }
+  function sfxMiss(pan=0) {
+    playOsc({type:"sawtooth", freq: 170, dur:0.10, gain:0.16, pan});
+    playNoise({dur:0.08, gain:0.08, pan, hp:200, lp:1800});
+  }
+  function sfxLevel() {
+    playOsc({type:"triangle", freq: 740, dur:0.10, gain:0.10, pan:0});
+    playOsc({type:"triangle", freq: 990, dur:0.11, gain:0.09, pan:0});
+    playOsc({type:"triangle", freq: 1320, dur:0.12, gain:0.08, pan:0});
+  }
+
+  // Performance + logs
+  const perf = {
+    attempts: [],
+    prefixHits: [0],
+    totalHit: 0,
+    totalMiss: 0,
+    maxAttempts: 200000,
+    hitAll: new Array(UA.length).fill(0),
+    totAll: new Array(UA.length).fill(0),
+  };
+
+  function windowSize() {
+    const v = selWindow.value;
+    return (v === "all") ? "all" : Math.max(1, Number(v));
+  }
+
+  function pushGlobalHit(isHit) {
+    perf.prefixHits.push(perf.prefixHits[perf.prefixHits.length - 1] + (isHit ? 1 : 0));
+  }
+
+  function recordAttempt(ch, isHit) {
+    perf.attempts.push({ ch, hit: isHit ? 1 : 0 });
+    pushGlobalHit(isHit);
+
+    if (isHit) perf.totalHit++; else perf.totalMiss++;
+
+    const i = idxOf.get(ch);
+    if (i !== undefined) {
+      perf.totAll[i] += 1;
+      perf.hitAll[i] += isHit ? 1 : 0;
+    }
+
+    if (perf.attempts.length > perf.maxAttempts) {
+      perf.attempts.shift();
+      perf.prefixHits = [0];
+      for (let k=0;k<perf.attempts.length;k++) perf.prefixHits.push(perf.prefixHits[k] + perf.attempts[k].hit);
+    }
+  }
+
+  function overallHitRate() {
+    const t = perf.totalHit + perf.totalMiss;
+    return t ? perf.totalHit / t : 0;
+  }
+
+  function globalHitRateRange(start, end) {
+    const n = end - start;
+    if (n <= 0) return 0;
+    const hits = perf.prefixHits[end] - perf.prefixHits[start];
+    return hits / n;
+  }
+
+  function currentWindowHitRate() {
+    const ws = windowSize();
+    const end = perf.attempts.length;
+    if (!end) return 0;
+    if (ws === "all") return overallHitRate();
+    const start = Math.max(0, end - ws);
+    return globalHitRateRange(start, end);
+  }
+
+  function updatePerfLabels() {
+    const ws = windowSize();
+    elWinLbl.textContent = ws === "all" ? "Window (All)" : `Window (${ws})`;
+
+    const hrWin = currentWindowHitRate();
+    const mrWin = 1 - hrWin;
+
+    const hrAll = overallHitRate();
+    const mrAll = 1 - hrAll;
+
+    elHitWin.textContent = `${Math.round(hrWin * 100)}%`;
+    elMissWin.textContent = `${Math.round(mrWin * 100)}%`;
+    elHitAll.textContent = `${Math.round(hrAll * 100)}%`;
+    elMissAll.textContent = `${Math.round(mrAll * 100)}%`;
+  }
+
+  function drawAvgLines(hrAll, mrAll, w, h) {
+    const yAt = (v) => (1 - v) * h;
+    g.globalAlpha = 0.65;
+    g.setLineDash([6,6]);
+
+    g.strokeStyle = "#42f587";
+    g.beginPath(); g.moveTo(0, yAt(hrAll)); g.lineTo(w, yAt(hrAll)); g.stroke();
+
+    g.strokeStyle = "#ff4d4d";
+    g.beginPath(); g.moveTo(0, yAt(mrAll)); g.lineTo(w, yAt(mrAll)); g.stroke();
+
+    g.setLineDash([]);
+    g.globalAlpha = 1;
+  }
+
+  function drawLineChart() {
+    const w = chart.width, h = chart.height;
+    g.clearRect(0,0,w,h);
+    g.fillStyle = "rgba(255,255,255,0.02)";
+    g.fillRect(0,0,w,h);
+
+    g.globalAlpha = 0.18;
+    g.strokeStyle = "rgba(255,255,255,0.35)";
+    g.lineWidth = 1;
+    for (let i=1;i<4;i++){
+      const y = (h*i)/4;
+      g.beginPath(); g.moveTo(0,y); g.lineTo(w,y); g.stroke();
+    }
+    for (let i=1;i<6;i++){
+      const x = (w*i)/6;
+      g.beginPath(); g.moveTo(x,0); g.lineTo(x,h); g.stroke();
+    }
+    g.globalAlpha = 1;
+
+    const hrAll = overallHitRate();
+    const mrAll = 1 - hrAll;
+    drawAvgLines(hrAll, mrAll, w, h);
+
+    const ws = windowSize();
+    const nAll = perf.attempts.length;
+    if (nAll < 2) return;
+
+    const displayStart = (ws === "all") ? 0 : Math.max(0, nAll - ws);
+    const displayEnd = nAll;
+    const points = displayEnd - displayStart;
+    if (points < 2) return;
+
+    const xAt = (i) => (i/(points-1)) * w;
+    const yAt = (v) => (1 - v) * h;
+
+    function hitAtAttempt(j) {
+      const end = j + 1;
+      if (ws === "all") return globalHitRateRange(0, end);
+      const start = Math.max(0, end - ws);
+      return globalHitRateRange(start, end);
+    }
+
+    g.lineWidth = 2;
+    g.strokeStyle = "#42f587";
+    g.beginPath();
+    for (let k=0;k<points;k++){
+      const j = displayStart + k;
+      const hr = hitAtAttempt(j);
+      const x = xAt(k);
+      const y = yAt(hr);
+      if (k===0) g.moveTo(x,y); else g.lineTo(x,y);
+    }
+    g.stroke();
+
+    g.strokeStyle = "#ff4d4d";
+    g.beginPath();
+    for (let k=0;k<points;k++){
+      const j = displayStart + k;
+      const hr = hitAtAttempt(j);
+      const mr = 1 - hr;
+      const x = xAt(k);
+      const y = yAt(mr);
+      if (k===0) g.moveTo(x,y); else g.lineTo(x,y);
+    }
+    g.stroke();
+
+    g.globalAlpha = 0.35;
+    g.strokeStyle = "rgba(255,255,255,0.65)";
+    g.beginPath(); g.moveTo(w,0); g.lineTo(w,h); g.stroke();
+    g.globalAlpha = 1;
+  }
+
+  function computeRollingPerLetter() {
+    const ws = windowSize();
+    const end = perf.attempts.length;
+    const start = (ws === "all") ? 0 : Math.max(0, end - ws);
+
+    const hitW = new Array(UA.length).fill(0);
+    const totW = new Array(UA.length).fill(0);
+
+    for (let i=start;i<end;i++){
+      const a = perf.attempts[i];
+      const idx = idxOf.get(a.ch);
+      if (idx === undefined) continue;
+      totW[idx] += 1;
+      hitW[idx] += a.hit;
+    }
+    return { hitW, totW };
+  }
+
+  function drawBarChart() {
+    const w = bars.width, h = bars.height;
+    gb.clearRect(0,0,w,h);
+
+    gb.fillStyle = "rgba(255,255,255,0.02)";
+    gb.fillRect(0,0,w,h);
+
+    const padL = 18, padR = 10, padT = 10, padB = 34;
+    const innerW = w - padL - padR;
+    const innerH = h - padT - padB;
+
+    gb.globalAlpha = 0.15;
+    gb.strokeStyle = "rgba(255,255,255,0.5)";
+    gb.lineWidth = 1;
+    for (let i=1;i<4;i++){
+      const y = padT + (innerH*i)/4;
+      gb.beginPath(); gb.moveTo(padL, y); gb.lineTo(padL + innerW, y); gb.stroke();
+    }
+    gb.globalAlpha = 1;
+
+    const { hitW, totW } = computeRollingPerLetter();
+
+    const n = UA.length;
+    const gap = 2;
+    const barW = Math.max(3, Math.floor((innerW - gap*(n-1)) / n));
+
+    for (let i=0;i<n;i++){
+      const x = padL + i*(barW + gap);
+
+      const rW = totW[i] ? (hitW[i]/totW[i]) : 0;
+      const rAll = perf.totAll[i] ? (perf.hitAll[i]/perf.totAll[i]) : 0;
+
+      const bh = Math.max(0, Math.round(rW * innerH));
+      const y = padT + (innerH - bh);
+
+      gb.fillStyle = "rgba(66,245,135,0.75)";
+      gb.fillRect(x, y, barW, bh);
+
+      if (!totW[i]) {
+        gb.fillStyle = "rgba(255,255,255,0.05)";
+        gb.fillRect(x, padT + innerH - 2, barW, 2);
+      }
+
+      const my = padT + (innerH - (rAll * innerH));
+      gb.strokeStyle = "rgba(255,255,255,0.9)";
+      gb.lineWidth = 2;
+      gb.beginPath();
+      gb.moveTo(x, my);
+      gb.lineTo(x + barW, my);
+      gb.stroke();
+
+      gb.fillStyle = "rgba(255,255,255,0.85)";
+      gb.font = "16px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+      gb.textAlign = "center";
+      gb.textBaseline = "top";
+      gb.fillText(UA[i], x + barW/2, padT + innerH + 6);
+    }
+
+    gb.fillStyle = "rgba(255,255,255,0.55)";
+    gb.font = "12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    gb.textAlign = "left";
+    gb.textBaseline = "middle";
+    gb.fillText("100%", 2, padT);
+    gb.fillText("0%", 2, padT + innerH);
+
+    const mix = rlMix();
+    gb.globalAlpha = 0.9;
+    gb.fillStyle = "rgba(255,255,255,0.8)";
+    gb.textAlign = "right";
+    gb.textBaseline = "top";
+    gb.font = "12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    gb.fillText(`RL mix: ${Math.round(mix*100)}%`, w-8, 6);
+    gb.globalAlpha = 1;
+  }
+
+  function poolForDifficulty(level) {
+    const diff = selDifficulty.value;
+    if (diff === "easy") {
+      const base = EASY_POOL.slice();
+      const extraCount = Math.min(UA.length, Math.max(0, level - 1) * 2);
+      const extras = UA.filter(ch => !base.includes(ch)).slice(0, extraCount);
+      return base.concat(extras);
+    }
+    if (diff === "hard") return HARD_POOL;
+    return NORMAL_POOL;
+  }
+
+  function chooseWeighted(items, weights) {
+    let s = 0;
+    for (const w of weights) s += w;
+    if (!(s > 0)) return items[(Math.random()*items.length)|0];
+    let r = Math.random() * s;
+    for (let i=0;i<items.length;i++){
+      r -= weights[i];
+      if (r <= 0) return items[i];
+    }
+    return items[items.length - 1];
+  }
+
+  // NEW: if threshold filters everything, auto-set to the *maximum* miss rate in pool
+  function clampThresholdToMaxMiss(basePool) {
+    let maxMiss = 0;
+
+    for (const ch of basePool) {
+      const i = idxOf.get(ch);
+      if (i === undefined) continue;
+
+      const nA = perf.totAll[i];
+      const pA = nA ? (perf.hitAll[i] / nA) : 0.5; // same prior as RL
+      const missA = 1 - pA;
+
+    if (missA > maxMiss) maxMiss = missA;
+    }
+
+    // IMPORTANT: use FLOOR so threshold never exceeds maxMiss due to rounding
+    // Example: maxMiss=0.999 -> floor(99.9)=99, NOT 100
+    const newVal = Math.max(0, Math.min(100, Math.floor(maxMiss * 100)));
+
+    rngThr.value = String(newVal);
+    updateThrLbl(); // updates label + RL info
+}
+
+  // RL bandit with: miss^exp, uncertainty, uniform floor, and threshold filter
+  function nextLetter(level) {
+    const mix = rlMix();
+    const basePool = poolForDifficulty(level);
+    if (mix <= 0.0001) return basePool[(Math.random()*basePool.length)|0];
+
+    const eps = 1e-6;
+    const exp = missEmphasis();
+    const uw = uncWeight();
+
+    // build eligible set using current threshold
+    function buildEligiblePool(thr) {
+      const pool = [];
+      for (const ch of basePool) {
+        const i = idxOf.get(ch);
+        if (i === undefined) { pool.push(ch); continue; }
+        const nA = perf.totAll[i];
+        const pA = nA ? (perf.hitAll[i]/nA) : 0.5;
+        const missA = 1 - pA;
+        if (missA >= thr) pool.push(ch);
+      }
+      return pool;
+    }
+
+    let thr = missThreshold();
+    let pool = buildEligiblePool(thr);
+
+    // If empty: auto-set threshold to max miss in pool, then rebuild.
+    if (pool.length === 0) {
+      clampThresholdToMaxMiss(basePool);
+      thr = missThreshold();
+      pool = buildEligiblePool(thr);
+      // After clamping, pool should be non-empty (at least the max-miss letters).
+    }
+
+    const T = perf.attempts.length;
+    const weightsRL = [];
+
+    for (const ch of pool) {
+      const i = idxOf.get(ch);
+      if (i === undefined) { weightsRL.push(1); continue; }
+
+      const nA = perf.totAll[i];
+      const pA = nA ? (perf.hitAll[i]/nA) : 0.5;
+      const missA = 1 - pA;
+
+      const missScore = Math.pow(missA + eps, exp);
+      const uncA = 1 / Math.sqrt(nA + 1);
+      const ucb = Math.sqrt(Math.log(T + 2) / (nA + 1));
+
+      const score = missScore * (1 + uw * uncA + 0.25 * ucb);
+      weightsRL.push(Math.max(0.0001, score));
+    }
+
+    // Blend uniform + RL via RL mix
+    const uniform = 1 / pool.length;
+    let weightsBlend = weightsRL.map(w => (1 - mix) * uniform + mix * w);
+
+    // Always keep a small uniform floor
+    weightsBlend = weightsBlend.map(w => (1 - UNIFORM_FLOOR) * w + UNIFORM_FLOOR * uniform);
+
+    return chooseWeighted(pool, weightsBlend);
+  }
+
+  // Game state + juice
+  const state = {
+    running:false, paused:false, last:0,
+    letters:[], particles:[], ripples:[],
+    floatText: [],
+    score:0, streak:0, misses:0, level:1, nextSpawnIn:0,
+    hitFlash: 0, missFlash: 0, shake: 0, shakeX: 0, shakeY: 0,
+  };
+
+  function syncHud() {
+    elScore.textContent = String(state.score);
+    elStreak.textContent = String(state.streak);
+    elMisses.textContent = String(state.misses);
+    elLevel.textContent = String(state.level);
+  }
+
+  function resetAllStats() {
+    perf.attempts = [];
+    perf.prefixHits = [0];
+    perf.totalHit = 0;
+    perf.totalMiss = 0;
+    perf.hitAll.fill(0);
+    perf.totAll.fill(0);
+  }
+
+  function reset() {
+    state.running=false; state.paused=false; state.last=0;
+    state.letters=[]; state.particles=[]; state.ripples=[]; state.floatText=[];
+    state.score=0; state.streak=0; state.misses=0; state.level=1; state.nextSpawnIn=0;
+    state.hitFlash=0; state.missFlash=0; state.shake=0; state.shakeX=0; state.shakeY=0;
+
+    resetAllStats();
+    syncHud();
+    updatePerfLabels();
+    drawLineChart();
+    drawBarChart();
+
+    btnStart.textContent="Start";
+    btnPause.textContent="Pause";
+    btnPause.disabled=true;
+
+    resize();
+    draw(true);
+  }
+
+  function difficultyParams() {
+    const diff = selDifficulty.value;
+    if (diff === "easy")   return { spawnMin: 420, spawnMax: 780, baseSpeed: 0.082, maxOnScreen: 4 };
+    if (diff === "hard")   return { spawnMin: 220, spawnMax: 480, baseSpeed: 0.155, maxOnScreen: 10 };
+    return                 { spawnMin: 320, spawnMax: 650, baseSpeed: 0.115, maxOnScreen: 7 };
+  }
+
+  function spawnOne() {
+    const ch = nextLetter(state.level);
+
+    const lastCh = state.letters.length ? state.letters[state.letters.length - 1].ch : null;
+    const pool = poolForDifficulty(state.level);
+    const finalCh = (ch === lastCh && pool.length > 1)
+      ? pool.filter(x => x !== lastCh)[(Math.random() * (pool.length - 1)) | 0]
+      : ch;
+
+    const fontSize = Math.floor((28 + Math.min(22, state.level * 2)) * dpr);
+    const x = (Math.random() * (W - 70 * dpr)) + 35 * dpr;
+    const y = -35 * dpr;
+
+    const { baseSpeed } = difficultyParams();
+    const vy = (baseSpeed + state.level * 0.0065) * dpr;
+
+    state.letters.push({ ch: finalCh, x, y, vy, fontSize, wobble: Math.random() * Math.PI * 2 });
+  }
+
+  function scheduleNextSpawn() {
+    const { spawnMin, spawnMax } = difficultyParams();
+    state.nextSpawnIn = spawnMin + Math.random() * (spawnMax - spawnMin);
+  }
+
+  function start() {
+    state.running=true; state.paused=false;
+    state.last = performance.now();
+    btnStart.textContent="Running";
+    btnPause.disabled=false;
+    requestAnimationFrame(tick);
+  }
+
+  function togglePause() {
+    if (!state.running) return;
+    state.paused = !state.paused;
+    btnPause.textContent = state.paused ? "Resume" : "Pause";
+    if (!state.paused) { state.last = performance.now(); requestAnimationFrame(tick); }
+    else draw(true);
+  }
+
+  function maybeLevelUp() {
+    const targetLevel = 1 + Math.floor(state.score / 18);
+    if (targetLevel > state.level) {
+      state.level = targetLevel;
+      sfxLevel();
+      state.hitFlash = Math.min(1, state.hitFlash + 0.35);
+      syncHud();
+    }
+  }
+
+  function findBestMatch(ch) {
+    let best=null;
+    for (const L of state.letters) if (L.ch===ch) if (!best || L.y>best.y) best=L;
+    return best;
+  }
+  function popLetter(letter) {
+    const idx = state.letters.indexOf(letter);
+    if (idx>=0) state.letters.splice(idx,1);
+  }
+
+  function burstParticles(x,y,strength=1){
+    const count = Math.floor(14*strength);
+    for (let i=0;i<count;i++){
+      const a = Math.random()*Math.PI*2;
+      const sp = (0.20+Math.random()*0.75)*dpr*strength;
+      state.particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:320+Math.random()*220,size:(1.2+Math.random()*2.2)*dpr,t:0});
+    }
+  }
+  function addRipple(x,y){ state.ripples.push({x,y,r:4*dpr,life:220,t:0}); }
+
+  function addFloatText(text, x, y, kind="bad") {
+    state.floatText.push({ text, x, y, vy: -0.09*dpr, life: 560, t: 0, kind });
+  }
+  function maybeStreakMilestone(x, y) {
+    if (state.streak > 0 && state.streak % 10 === 0) addFloatText(`${state.streak} STREAK!`, x, y, "good");
+  }
+
+  selWindow.addEventListener("change", () => { updatePerfLabels(); drawLineChart(); drawBarChart(); });
+  selDifficulty.addEventListener("change", () => { scheduleNextSpawn(); drawBarChart(); });
+
+  // Input
+  window.addEventListener("keydown", (e) => {
+    if (selSound.value === "on") { try { ensureAudio(); if (audioCtx && audioCtx.state==="suspended") audioCtx.resume(); } catch {} }
+
+    if (e.key==="Enter"){ e.preventDefault(); if(!state.running) start(); else togglePause(); return; }
+    if (e.key==="Escape"){ e.preventDefault(); reset(); return; }
+
+    if (!state.running || state.paused) return;
+
+    const k = (e.key||"").toLowerCase();
+    if (!idxOf.has(k)) return;
+
+    sfxKey(0);
+    const match = findBestMatch(k);
+
+    if (match){
+      const pan = panForX(match.x);
+      burstParticles(match.x, match.y, 1 + Math.min(1.2, state.streak/25));
+      addRipple(match.x, match.y);
+      popLetter(match);
+
+      state.score += 1 + Math.min(4, Math.floor(state.streak/8));
+      state.streak += 1;
+
+      recordAttempt(k, true);
+      sfxHit(pan);
+
+      state.hitFlash = Math.min(1, state.hitFlash + 0.22);
+      maybeStreakMilestone(match.x, match.y - 18*dpr);
+
+      maybeLevelUp();
+    } else {
+      state.misses += 1;
+      state.streak = 0;
+
+      recordAttempt(k, false);
+      sfxMiss(0);
+
+      state.missFlash = Math.min(1, state.missFlash + 0.45);
+      state.shake = Math.min(1, state.shake + 0.7);
+      addFloatText("MISS", W/2, H/2 - 20*dpr, "bad");
+    }
+
+    syncHud();
+    updatePerfLabels();
+    drawLineChart();
+    drawBarChart();
+
+    if (selMode.value==="single" && state.letters.length===0) { spawnOne(); scheduleNextSpawn(); }
+  }, {passive:false});
+
+  function tick(now){
+    if (!state.running || state.paused) return;
+
+    const dtReal = Math.min(50, now - state.last);
+    state.last = now;
+    const dt = dtReal * speedFactor();
+
+    const mode = selMode.value;
+    const { maxOnScreen } = difficultyParams();
+
+    if (state.nextSpawnIn <= 0) scheduleNextSpawn();
+    state.nextSpawnIn -= dt;
+
+    if (mode==="single"){
+      if (state.letters.length===0){ spawnOne(); scheduleNextSpawn(); }
+    } else {
+      if (state.nextSpawnIn <= 0 && state.letters.length < maxOnScreen){ spawnOne(); scheduleNextSpawn(); }
+    }
+
+    for (const L of state.letters){ L.y += L.vy * dt; L.wobble += 0.012 * dt; }
+
+    const bottom = H - 40*dpr;
+    for (let i=state.letters.length-1;i>=0;i--){
+      if (state.letters[i].y > bottom){
+        const x = state.letters[i].x;
+        const ch = state.letters[i].ch;
+        state.letters.splice(i,1);
+
+        state.misses += 1;
+        state.streak = 0;
+
+        recordAttempt(ch, false);
+        sfxMiss(panForX(x));
+
+        state.missFlash = Math.min(1, state.missFlash + 0.30);
+        state.shake = Math.min(1, state.shake + 0.55);
+        addFloatText("MISS", x, bottom - 10*dpr, "bad");
+
+        syncHud();
+        updatePerfLabels();
+        drawLineChart();
+        drawBarChart();
+      }
+    }
+
+    for (let i=state.particles.length-1;i>=0;i--){
+      const p = state.particles[i];
+      p.t += dt; p.x += p.vx*dt; p.y += p.vy*dt;
+      p.vx *= Math.pow(0.996, dt); p.vy *= Math.pow(0.996, dt);
+      p.vy += 0.00075*dt*dpr;
+      if (p.t >= p.life) state.particles.splice(i,1);
+    }
+
+    for (let i=state.ripples.length-1;i>=0;i--){
+      const r = state.ripples[i];
+      r.t += dt; r.r += 0.22*dt*dpr;
+      if (r.t >= r.life) state.ripples.splice(i,1);
+    }
+
+    for (let i=state.floatText.length-1;i>=0;i--){
+      const ft = state.floatText[i];
+      ft.t += dt;
+      ft.y += ft.vy * dt;
+      if (ft.t >= ft.life) state.floatText.splice(i,1);
+    }
+
+    state.hitFlash *= Math.pow(0.90, dt/16);
+    state.missFlash *= Math.pow(0.86, dt/16);
+    state.shake *= Math.pow(0.82, dt/16);
+
+    if (state.shake > 0.001) {
+      const s = state.shake * 7 * dpr;
+      state.shakeX = (Math.random()*2-1) * s;
+      state.shakeY = (Math.random()*2-1) * s;
+    } else {
+      state.shakeX = 0;
+      state.shakeY = 0;
+    }
+
+    draw(false);
+    requestAnimationFrame(tick);
+  }
+
+  function draw(isIdle){
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,W,H);
+
+    ctx.translate(state.shakeX, state.shakeY);
+
+    ctx.fillStyle="#0b0f1a";
+    ctx.fillRect(-20*dpr,-20*dpr,W+40*dpr,H+40*dpr);
+
+    const lineY = H - 40*dpr;
+    ctx.globalAlpha=0.20;
+    ctx.fillStyle="#ff4d4d";
+    ctx.fillRect(0,lineY,W,2*dpr);
+    ctx.globalAlpha=1;
+
+    for (const r of state.ripples){
+      const a = 1 - (r.t/r.life);
+      ctx.globalAlpha = 0.28*a;
+      ctx.strokeStyle="#ffffff";
+      ctx.lineWidth=2*dpr;
+      ctx.beginPath();
+      ctx.arc(r.x,r.y,r.r,0,Math.PI*2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+
+    ctx.fillStyle="#ffffff";
+    for (const p of state.particles){
+      const a = 1 - (p.t/p.life);
+      ctx.globalAlpha = 0.9*a;
+      ctx.fillRect(p.x,p.y,p.size,p.size);
+    }
+    ctx.globalAlpha=1;
+
+    for (const L of state.letters){
+      const wob = Math.sin(L.wobble)*2.2*dpr;
+      ctx.font = `800 ${L.fontSize}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+      ctx.textAlign="center";
+      ctx.textBaseline="middle";
+      ctx.shadowColor="rgba(255,255,255,0.40)";
+      ctx.shadowBlur=22*dpr;
+      ctx.fillStyle="#ffffff";
+      ctx.fillText(L.ch, L.x + wob, L.y);
+      ctx.shadowBlur=0;
+    }
+
+    for (const ft of state.floatText) {
+      const a = 1 - (ft.t / ft.life);
+      ctx.globalAlpha = 0.95 * a;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `900 ${Math.floor(20*dpr)}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+      ctx.fillStyle = ft.kind === "bad" ? "#ff8a8a" : "#ffffff";
+      ctx.fillText(ft.text, ft.x, ft.y);
+      ctx.globalAlpha = 1;
+    }
+
+    const msg = (!state.running) ? "Press Start (or Enter) — type Ukrainian letters"
+              : (state.paused ? "Paused — press Enter to resume" : "");
+    if (msg){
+      ctx.globalAlpha=0.92;
+      ctx.fillStyle="#ffffff";
+      ctx.textAlign="center";
+      ctx.textBaseline="middle";
+      ctx.font=`800 ${Math.floor(20*dpr)}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+      ctx.fillText(msg, W/2, H/2 - 10*dpr);
+      ctx.globalAlpha=1;
+    }
+
+    if (!state.running && isIdle){
+      const ch = UA[(Math.random()*UA.length)|0];
+      ctx.globalAlpha=0.23;
+      ctx.font=`900 ${Math.floor(120*dpr)}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+      ctx.fillStyle="#ffffff";
+      ctx.fillText(ch, W/2, H/2 + 110*dpr);
+      ctx.globalAlpha=1;
+    }
+
+    ctx.setTransform(1,0,0,1,0,0);
+
+    if (state.hitFlash > 0.002) {
+      ctx.globalAlpha = 0.12 * state.hitFlash;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0,0,W,H);
+      ctx.globalAlpha = 1;
+    }
+    if (state.missFlash > 0.002) {
+      ctx.globalAlpha = 0.14 * state.missFlash;
+      ctx.fillStyle = "#ff3b3b";
+      ctx.fillRect(0,0,W,H);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  btnStart.addEventListener("click", async () => {
+    if (selSound.value==="on"){
+      try { ensureAudio(); if (audioCtx.state==="suspended") await audioCtx.resume(); } catch {}
+    }
+    if (!state.running) start();
+  });
+  btnPause.addEventListener("click", () => togglePause());
+  btnReset.addEventListener("click", () => reset());
+  selMode.addEventListener("change", () => { if (selMode.value==="single") state.letters = state.letters.slice(-1); });
+
+  // init
+  resize();
+  reset();
+})();
+</script>
+</body>
+</html>
