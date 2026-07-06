@@ -1,0 +1,70 @@
+Classes of High Value Targets 
+
+Total categories: 203
+
+1. Air-defense systems / SAMs
+-----------------------------
+- BUK-M1
+- BUK-M2
+- BUK-M2 C2
+- BUK-M2 Launcher
+- BUK-M3
+- Decoy Pantsir-S1
+- OSA SAM
+- Pantsir-S1
+- PU S-400
+- S-300
+- S-300 Launcher
+- S-300V
+- S-300VM
+- S-350 Tractor
+- S-350 Vityaz
+- S-400
+- S-500 Prometheus
+- Strela-10
+- Strela-10M4
+- TOR on Semitruck
+- TOR-M1
+- TOR-M1-2U
+- TOR-M2
+- TOR-M2KM
+- TOR-M2U
+- Tunguska
+
+2. Aircraft and helicopters
+---------------------------
+- An-26
+- An-72P Aircraft
+- Be-12 Chaika
+- Be-200 "Altair" Aircraft
+- Ka-27
+- Mi-17
+- Mi-28
+- Mi-8
+- MiG-29
+- Su-24
+- Su-30
+- Tu-142
+
+3. Naval vessels and maritime targets
+-------------------------------------
+- BK-16 Boat
+- Boat 03160 Raptor
+- Cargo Ship
+- Jack-Up Drilling Rig "Sivash"
+- Port Crane
+- Project 05060
+- Project 10410 "Svetlyak" Border Patrol Ship
+- Project 11356 Frigate "Admiral Essen"
+- Project 11356R Frigate
+- Project 1171 Nikolai Filchenkov
+- Project 1239 Missile Hovercraft
+- Project 1496M1
+- Project 16640
+- Project 21631 "Buyan-M"
+- Project 22460 Ochotnik
+- Project 705BM
+- Project 775 Yamal
+- Project MPRSV07
+- Support Vessel
+- Tugboat
