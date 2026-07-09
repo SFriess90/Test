@@ -1,0 +1,276 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
+from matplotlib.colors import Normalize
+
+
+def _density_jitter(y, max_width=0.28, bins=80, rng=None):
+    """
+    Beeswarm-like horizontal jitter.
+
+    Dense amplitude regions get wider horizontal spread.
+    Sparse amplitude regions stay narrow.
+    """
+    if isinstance(rng, np.random.Generator):
+        rng = rng
+    else:
+        rng = np.random.default_rng(rng)
+
+    y = np.asarray(y, dtype=float)
+
+    if len(y) == 0:
+        return np.array([])
+
+    y_min, y_max = np.nanmin(y), np.nanmax(y)
+
+    if y_min == y_max:
+        return rng.uniform(-max_width, max_width, size=len(y))
+
+    edges = np.linspace(y_min, y_max, bins + 1)
+    bin_id = np.digitize(y, edges) - 1
+    bin_id = np.clip(bin_id, 0, bins - 1)
+
+    counts = np.bincount(bin_id, minlength=bins)
+    max_count = counts.max()
+
+    offsets = np.zeros(len(y))
+
+    for b in range(bins):
+        idx = np.where(bin_id == b)[0]
+        k = len(idx)
+
+        if k == 0:
+            continue
+
+        width = max_width * np.sqrt(k / max_count)
+
+        if k == 1:
+            offsets[idx] = 0.0
+        else:
+            positions = np.linspace(-width, width, k)
+            offsets[idx] = rng.permutation(positions)
+
+        offsets[idx] += rng.normal(scale=max_width * 0.015, size=k)
+
+    return offsets
+
+
+def _change_point_indices(y, change_tol=0.0):
+    """
+    Return indices where the amplitude changes.
+    Includes first and last point.
+    """
+    y = np.asarray(y, dtype=float)
+
+    if len(y) == 0:
+        return np.array([], dtype=int)
+
+    if len(y) == 1:
+        return np.array([0], dtype=int)
+
+    changes = np.abs(np.diff(y)) > change_tol
+    idx = np.r_[0, np.where(changes)[0] + 1]
+
+    if idx[-1] != len(y) - 1:
+        idx = np.r_[idx, len(y) - 1]
+
+    return idx
+
+
+def plot_vertical_transition_strips(
+    series,
+    names=None,
+    *,
+    ax=None,
+    cmap="coolwarm",
+    jitter_width=0.28,
+    jitter_bins=80,
+    point_size=8,
+    point_alpha=0.55,
+    spine=True,
+    spine_lw=1.2,
+    spine_alpha=0.75,
+    change_tol=0.0,
+    show_colorbar=True,
+    show_guides=True,
+    title="Jittered vertical strip-trajectory plot",
+    ylabel="Amplitude",
+    random_state=1,
+):
+    rng = np.random.default_rng(random_state)
+
+    if isinstance(series, dict):
+        if names is None:
+            names = list(series.keys())
+        data = [np.asarray(series[name], dtype=float) for name in names]
+    elif hasattr(series, "columns"):
+        if names is None:
+            names = list(series.columns)
+        data = [np.asarray(series[name], dtype=float) for name in names]
+    else:
+        data = [np.asarray(s, dtype=float) for s in series]
+        if names is None:
+            names = [f"Series {i + 1}" for i in range(len(data))]
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(1.25 * len(data) + 3, 7))
+    else:
+        fig = ax.figure
+
+    norm = Normalize(vmin=0, vmax=1)
+
+    for i, y_raw in enumerate(data):
+        y = np.asarray(y_raw, dtype=float)
+        y = y[np.isfinite(y)]
+
+        if len(y) == 0:
+            continue
+
+        x_center = i
+        t_norm = np.linspace(0, 1, len(y))
+
+        offsets = _density_jitter(
+            y,
+            max_width=jitter_width,
+            bins=jitter_bins,
+            rng=rng,
+        )
+        x = x_center + offsets
+
+        if show_guides:
+            ax.axvline(
+                x_center,
+                color="0.85",
+                lw=0.8,
+                ls=":",
+                zorder=0,
+            )
+
+        ax.scatter(
+            x,
+            y,
+            c=t_norm,
+            cmap=cmap,
+            norm=norm,
+            s=point_size,
+            alpha=point_alpha,
+            edgecolors="none",
+            zorder=2,
+        )
+
+        if spine:
+            cp = _change_point_indices(y, change_tol=change_tol)
+
+            if len(cp) >= 2:
+                segments = []
+                segment_colors = []
+
+                for a, b in zip(cp[:-1], cp[1:]):
+                    segments.append([
+                        (x_center, y[a]),
+                        (x_center, y[b]),
+                    ])
+                    segment_colors.append((t_norm[a] + t_norm[b]) / 2)
+
+                lc = LineCollection(
+                    segments,
+                    cmap=cmap,
+                    norm=norm,
+                    linewidths=spine_lw,
+                    alpha=spine_alpha,
+                    zorder=3,
+                )
+                lc.set_array(np.asarray(segment_colors))
+                ax.add_collection(lc)
+
+        ax.text(
+            x_center,
+            1.02,
+            names[i],
+            ha="center",
+            va="bottom",
+            transform=ax.get_xaxis_transform(),
+            fontsize=10,
+            fontweight="bold",
+        )
+
+    ax.set_xlim(-0.7, len(data) - 0.3)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title, pad=28)
+
+    # No horizontal data axis: x only separates strips visually.
+    ax.set_xticks([])
+    ax.tick_params(axis="x", bottom=False, labelbottom=False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    ax.grid(axis="y", color="0.9", lw=0.8)
+
+    if show_colorbar:
+        sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+        cbar = fig.colorbar(sm, ax=ax, pad=0.015)
+        cbar.set_label("Time")
+        cbar.set_ticks([0, 1])
+        cbar.set_ticklabels(["Early", "Late"])
+
+    fig.tight_layout()
+    return fig, ax
+
+
+def make_demo_series(n_series=6, n=550, random_state=22):
+    """
+    Synthetic mostly monotonically decreasing, piecewise-constant time series.
+    Some levels have many samples; some have few samples.
+    """
+    rng = np.random.default_rng(random_state)
+    out = {}
+
+    for s in range(n_series):
+        n_states = rng.integers(7, 11)
+
+        # Monotonically decreasing states.
+        start = rng.uniform(8.0, 10.0)
+        end = rng.uniform(-10.0, -7.5)
+        levels = np.sort(rng.uniform(end, start, size=n_states))[::-1]
+
+        # Unequal dwell times create crowded and barely occupied amplitude values.
+        dwell_probs = rng.dirichlet(np.ones(n_states) * rng.uniform(0.35, 1.0))
+        dwell = np.maximum(3, np.round(dwell_probs * n).astype(int))
+
+        y = np.repeat(levels, dwell)
+
+        if len(y) > n:
+            y = y[:n]
+        elif len(y) < n:
+            y = np.r_[y, np.repeat(y[-1], n - len(y))]
+
+        # Very small measurement noise just so bands are visible.
+        y = y + rng.normal(0, 0.035, size=len(y))
+
+        out[f"Series {s + 1}"] = y
+
+    return out
+
+
+demo = make_demo_series()
+
+fig, ax = plot_vertical_transition_strips(
+    demo,
+    jitter_width=0.32,
+    jitter_bins=90,
+    point_size=7,
+    point_alpha=0.52,
+    spine=True,
+    spine_lw=1.4,
+    change_tol=0.20,
+    cmap="coolwarm",
+    title="Proof-of-concept: jittered vertical strip-trajectory plot",
+    random_state=10,
+)
+
+out = "/mnt/data/vertical_strip_trajectory_proof.png"
+fig.savefig(out, dpi=180, bbox_inches="tight")
+plt.show()
+
+out
