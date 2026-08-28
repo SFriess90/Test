@@ -1,0 +1,55 @@
+import numpy as np
+
+timesteps = [
+    # t = 1
+    {
+        "bboxes": np.array([
+            [40, 50, 20, 40],   # physical object A
+            [70, 50, 20, 40],   # physical object B
+        ]),
+        "features": np.array([
+            [1.0, 0.0, 0.0],    # A-like
+            [0.0, 1.0, 0.0],    # B-like
+        ]),
+        "confidences": np.array([0.95, 0.95]),
+    },
+
+    # t = 2: objects approach each other
+    {
+        "bboxes": np.array([
+            [46, 50, 20, 40],   # A
+            [64, 50, 20, 40],   # B
+        ]),
+        "features": np.array([
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+        ]),
+        "confidences": np.array([0.95, 0.95]),
+    },
+
+    # t = 3: both tracks become confirmed
+    {
+        "bboxes": np.array([
+            [52, 50, 20, 40],   # A
+            [58, 50, 20, 40],   # B
+        ]),
+        "features": np.array([
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+        ]),
+        "confidences": np.array([0.95, 0.95]),
+    },
+
+    # t = 4: objects cross, but APPEARANCE FEATURES ARE SWAPPED
+    {
+        "bboxes": np.array([
+            [58, 50, 20, 40],   # physical A
+            [52, 50, 20, 40],   # physical B
+        ]),
+        "features": np.array([
+            [0.05, 0.998, 0.02],  # A incorrectly looks like B
+            [0.998, 0.05, 0.02],  # B incorrectly looks like A
+        ]),
+        "confidences": np.array([0.95, 0.95]),
+    },
+]
