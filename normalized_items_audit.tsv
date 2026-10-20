@@ -1,0 +1,529 @@
+row	original_entry	normalized_identifier
+1	TOR-M2	TOR-M2
+2	TOR-M2	TOR-M2
+3	Strela-10M4	Strela-10M4
+4	SAM "OSA"	OSA SAM
+5	Strela-10M4	Strela-10M4
+6	Multiple	Multiple
+7	Solntsepyok	TOS-1A Solntsepyok
+8	TOR-M2	TOR-M2
+9	TOR-M2	TOR-M2
+10	TOR-M2	TOR-M2
+11	BUK M-2	BUK-M2
+12	BUK M-3	BUK-M3
+13	BUK M-3	BUK-M3
+14	BM21 Grad MLRS	BM-21 Grad MLRS
+15	TOR-M2	TOR-M2
+16	TOR-M2	TOR-M2
+17	TOR-M2	TOR-M2
+18	TOR-M2U	TOR-M2U
+19	Fuel Depot	Fuel Depot
+20	NEBO-U	Nebo-U
+21	BUK-M2 Launcher	BUK-M2 Launcher
+22	BUK-M3 SAM	BUK-M3
+23	TOR-M1	TOR-M1
+24	S300/400 Radar	S-300/S-400 Radar
+25	Fuel Train	Fuel Trains
+26	Fuel Train	Fuel Trains
+27	TOR SAM	TOR SAM
+28	Gerbera Launchers	Gerbera Launchers
+29	TOR SAM	TOR SAM
+30	BUK-M3 SAM	BUK-M3
+31	S-300 Radar	S-300 Radar
+32	TOR SAM	TOR SAM
+33	MT-LB	MT-LB
+34	Truck	Trucks
+35	Truck	Trucks
+36	Truck	Trucks
+37	AN-72P Aircraft	An-72P Aircraft
+38	P-37 "Mech"	P-37 "Mech"
+39	BUK ADF	BUK ADF
+40	Fuel Tankers	Fuel Tankers
+41	Fuel Tankers	Fuel Tankers
+42	Oil Depot	Oil Depot
+43	S-400 Radar	S-400 Radar
+44	TOR SAM	TOR SAM
+45	MTLB ZU-23	MT-LB ZU-23
+46	Airspace Control Radar	Airspace Control Radar
+47	BRDM2	BRDM2
+48	TOR SAM	TOR SAM
+49	Oil Storage Facility	Oil Storage Facility
+50	Pontoon Bridge	Pontoon Bridge
+51	AN-72P Aircraft	An-72P Aircraft
+52	92N6E Radar	92N6E Radar
+53	Jack-Up Drilling Rig "Sivash"	Jack-Up Drilling Rig "Sivash"
+54	P-18 RADAR	P-18 Terek Radar
+55	MI-28	Mi-28
+56	MI-17	Mi-17
+57	Oil Depot	Oil Depot
+58	Oil Depot	Oil Depot
+59	Pantsir-S1	Pantsir-S1
+60	TOR-M2	TOR-M2
+61	KASTA-2E Radar	Kasta-2E Radar
+62	BUK-M1	BUK-M1
+63	Project 11356R Frigate	Project 11356R Frigate
+64	OSA SAM	OSA SAM
+65	Pantsir-S1	Pantsir-S1
+66	Trains	Trains
+67	Oil Depot	Oil Depot
+68	Trucks	Trucks
+69	BUK	BUK
+70	BUK	BUK
+71	Radar	Radar
+72	TOR-M2	TOR-M2
+73	TOR-M2	TOR-M2
+74	BUK-M1	BUK-M1
+75	BUK-M2	BUK-M2
+76	TOR-M2	TOR-M2
+77	TOR-M1-2U	TOR-M1-2U
+78	TOR-M1	TOR-M1
+79	BUK-M3	BUK-M3
+80	Ammunition Depot	Ammunition Depot
+81	Ammunition Depot	Ammunition Depot
+82	Data Center	Data Center
+83	Substation	Substation
+84	Radar System	Radar System
+85	Tornado S-MLRS	Tornado-S MLRS
+86	Oil Depot	Oil Depot
+87	-	
+88	TOR-M2	TOR-M2
+89	TOR-M2	TOR-M2
+90	S-300 V	S-300V
+91	TOR	TOR SAM
+92	Pantsir-S1	Pantsir-S1
+93	TOR	TOR SAM
+94	S-300 V	S-300V
+95	Fuel Train	Fuel Trains
+96	S-350 Vityaz	S-350 Vityaz
+97	TOR-M2	TOR-M2
+98	TOR-M2	TOR-M2
+99	BUK-M3	BUK-M3
+100	BUK-M1	BUK-M1
+101	TOR-M1	TOR-M1
+102	Strela-10	Strela-10
+103	S-300VM	S-300VM
+104	TOR	TOR SAM
+105	TOR-M1	TOR-M1
+106	UAV Site	UAV Site
+107	TOR-M1	TOR-M1
+108	TOR-M1	TOR-M1
+109	BUK-M1	BUK-M1
+110	BM-27 Uragan MLRS	BM-27 Uragan MLRS
+111	P-18 Radar	P-18 Terek Radar
+112	Pantsir-S1	Pantsir-S1
+113	Pantsir-S1	Pantsir-S1
+114	S-300 Radar	S-300 Radar
+115	S-300 Launcher	S-300 Launcher
+116	TOR-M2	TOR-M2
+117	Fuel Trains	Fuel Trains
+118	TOR-M1	TOR-M1
+119	Pantsir-S1	Pantsir-S1
+120	TOR-M1	TOR-M1
+121	Buildings	Buildings
+122	Buildings	Buildings
+123	Buildings	Buildings
+124	Buildings	Buildings
+125	Telecom Tower	Telecom Tower
+126	Telecom Station	Telecom Station
+127	3RK OSA	OSA SAM
+128	BUK-M1	BUK-M1
+129	Pantsir-S1	Pantsir-S1
+130	TOS-1A Sonzelpok	TOS-1A Solntsepyok
+131	Buildings	Buildings
+132	Trucks	Trucks
+133	Trucks	Trucks
+134	Gas Storage	Gas Storage
+135	Different PPO	Different PPO
+136	T72	T-72
+137	BBM	BBM
+138	Haubitze	Haubitze
+139	Warehouse	Warehouse
+140	Fuel Truck	Fuel Truck
+141	Msta-S (SAU) Artillery	Msta-S (SAU) Artillery
+142	BUK-M3	BUK-M3
+143	9S36 Radar	9S36 Radar
+144	9K317M BUK-M3	BUK-M3
+145	3RK S-500	S-500 Prometheus
+146	RLS Valday "Radar"	Valday Radar
+147	Project 21631 "Buyan-M"	Project 21631 "Buyan-M"
+148	Project MPRSV07	Project MPRSV07
+149	3RK S-400	S-400
+150	Multiple (incl. Ships & S-300/S-400)	Multiple (incl. Ships & S-300/S-400)
+151	BUK-M3	BUK-M3
+152	Mi-8	Mi-8
+153	BE-12 Chaika	Be-12 Chaika
+154	BE-12 Chaika	Be-12 Chaika
+155	Nebo-M	Nebo-M
+156	48YA6-K1 Podlot	48Ya6-K1 Podlot
+157	C-300V	S-300V
+158	Niobi-SV	Niobi-SV
+159	Niobi-SV	Niobi-SV
+160	Mi-8	Mi-8
+161	Mi-8	Mi-8
+162	Buksira	Buksira
+163	VTA Kamaz TA	VTA Kamaz TA
+164	48YA6-K1 Podlot	48Ya6-K1 Podlot
+165	S-300V	S-300V
+166	48YA6-K1 Podlot	48Ya6-K1 Podlot
+167	Obstanovki	Obstanovki
+168	MR-10M1 MIS M1	MR-10M1 MIS M1
+169	AN-26	An-26
+170	AN-26	An-26
+171	S-400 RLS	S-400 Radar
+172	PU S-400	PU S-400
+173	S-400 RLS	S-400 Radar
+174	S-400 RLO	S-400 Radar
+175	S-400 RLO	S-400 Radar
+176	Mig-29	MiG-29
+177	Irtisch	Irtisch
+178	Tor M1	TOR-M1
+179	S-400	S-400
+180	BUK-M3	BUK-M3
+181	Geran / Gerbera	Geran / Gerbera
+182	48YA6-K1 Podlot	48Ya6-K1 Podlot
+183	BRLS MR-213-3 Vaihach	BRLS MR-213-3 Vaihach
+184	MR-231 Radar, MSU Serval	MR-231 Radar, MSU Serval
+185	Baltika-B	Baltika-B
+186	EW Station	EW Station
+187	Bunker (SU-24)	Bunker (SU-24)
+188	Fuel Depot	Fuel Depot
+189	Bunker (SU-30)	Bunker (SU-30)
+190	Electronic Recconaissance Station	Electronic Reconnaissance Station
+191	48YA6-K1 Podlot	48Ya6-K1 Podlot
+192	Nebo-U	Nebo-U
+193	Tor-M2	TOR-M2
+194	Nebo-SVU	Nebo-SVU
+195	48YA6-K1 Podlot	48Ya6-K1 Podlot
+196	COPKA-2	Sopka-2
+197	P-18 Terek	P-18 Terek Radar
+198	Geran / Gerbera	Geran / Gerbera
+199	RSL-6 M2	RSL-6 M2
+200	Radio Surveillance Station	Radio Surveillance Station
+201	KASTA-2E Radar	Kasta-2E Radar
+202	Mi-8	Mi-8
+203	Mi-8	Mi-8
+204	Nebo-U	Nebo-U
+205	Mi-8	Mi-8
+206	Panzir-S1	Pantsir-S1
+207	Tor-M1	TOR-M1
+208	Tor-M2	TOR-M2
+209	Nebo-M	Nebo-M
+210	Protivnik-GE (Radar)	Protivnik-GE (Radar)
+211	Utes-T (Radar)	Utes-T (Radar)
+212	RT-70 Radar	RT-70 Radar
+213	Glonas (Covered)	GLONASS
+214	MR-10M1 MIS M1	MR-10M1 MIS M1
+215	3RK S-400	S-400
+216	Nebo-SVU	Nebo-SVU
+217	BUK-M3	BUK-M3
+218	Nebo-SVU	Nebo-SVU
+219	Panzir-S1	Pantsir-S1
+220	Nebo-U	Nebo-U
+221	BK-16 Boat	BK-16 Boat
+222	Lira-A10	Lira-A10
+223	Nebo-U	Nebo-U
+224	Nebo-SV (Covered)	Nebo-SV
+225	P-18 Terek	P-18 Terek Radar
+226	Panzir-S1	Pantsir-S1
+227	KA-27	Ka-27
+228	S-400	S-400
+229	P-18 Terek	P-18 Terek Radar
+230	Nebo-U	Nebo-U
+231	Panzir-S1	Pantsir-S1
+232	BK-16 Boat	BK-16 Boat
+233	Building	Buildings
+234	RSP-6M2 Radar	RSP-6M2 Radar
+235	Bunker OIVT	Bunker OIVT
+236	S-300V	S-300V
+237	BUK-M3	BUK-M3
+238	BUK-M3	BUK-M3
+239	Project 775 Yamal	Project 775 Yamal
+240	Project 1171 Nikkolai Filchenkov	Project 1171 Nikolai Filchenkov
+241	48YA6-K1 Podlot	48Ya6-K1 Podlot
+242	Project 05060	Project 05060
+243	Support Vessel	Support Vessel
+244	Project 05060	Project 05060
+245	Hangar (Project 05060)	Hangar (Project 05060)
+246	BE-12 Chaika	Be-12 Chaika
+247	Project 05060	Project 05060
+248	Antenna in Radio  Dome (V/Ch 85683-E)	Antenna in Radio Dome (V/Ch 85683-E)
+249	Kasta-2E2	Kasta-2E2
+250	Radio Beacon (Mikolaivka)	Radio Beacon (Mikolaivka)
+251	Orion Drone	Orion Drone
+252	48YA6-K1 Podlot	48Ya6-K1 Podlot
+253	48YA6-K1 Podlot	48Ya6-K1 Podlot
+254	Train + VTA Ural	Train + VTA Ural
+255	SU-24	Su-24
+256	Project 22460 Ochotnik	Project 22460 Ochotnik
+257	S-400	S-400
+258	Vorpost Drone	Vorpost Drone
+259	Project 1496M1	Project 1496M1
+260	Project 16640	Project 16640
+261	BK-16 Boat	BK-16 Boat
+262	KA-27	Ka-27
+263	Panzir-S1	Pantsir-S1
+264	Neobi-SV	Niobi-SV
+265	Pechora-3 (Radar / EW)	Pechora-3 (Radar / EW)
+266	Protivnik-GE (Radar)	Protivnik-GE (Radar)
+267	SU-30	Su-30
+268	Radio Surveillance Station	Radio Surveillance Station
+269	Valday Radar (Covered)	Valday Radar
+270	Geran / Gerbera	Geran / Gerbera
+271	Geran / Gerbera	Geran / Gerbera
+272	BK-16 Boat	BK-16 Boat
+273	BK-16 Boat	BK-16 Boat
+274	Glonas (Covered)	GLONASS
+275	Glonas (Covered)	GLONASS
+276	Panzir-S1	Pantsir-S1
+277	Nebo-SVU	Nebo-SVU
+278	BK-16 Boat	BK-16 Boat
+279	48YA6-K1 Podlot (Covered)	48Ya6-K1 Podlot
+280	SU-30 (no destruction)	Su-30
+281	S-400	S-400
+282	Radar Dome	Radar Dome
+283	Multiple (Very Good)	Multiple (Very Good)
+284	PU Bastion-M	PU Bastion-M
+285	MVG	MVG
+286	Control Vehicle / Car	Control Vehicle / Car
+287	48YA6-K1 Podlot	48Ya6-K1 Podlot
+288	48YA6-K1 Podlot (Covered)	48Ya6-K1 Podlot
+289	Radar Dome	Radar Dome
+290	Glonas (Covered)	GLONASS
+291	Irtisch	Irtisch
+292	Antenna in Radio  Dome (V/Ch 85683-E)	Antenna in Radio Dome (V/Ch 85683-E)
+293	Utes-T (Radar)	Utes-T (Radar)
+294	Nebo-SVU (Covered)	Nebo-SVU
+295	Nebo-SVU	Nebo-SVU
+296	Diesel Generator	Diesel Generator
+297	Nebo-U	Nebo-U
+298	Niobi-SV	Niobi-SV
+299	Nebo-M	Nebo-M
+300	Niobi-SV	Niobi-SV
+301	MR-10M1 MIS M1	MR-10M1 MIS M1
+302	Surface Radar	Surface Radar
+303	Radio Beacon (Mikolaivka)	Radio Beacon (Mikolaivka)
+304	Lira-A10	Lira-A10
+305	RSP-6M2 Radar	RSP-6M2 Radar
+306	RT-70 Radar	RT-70 Radar
+307	Kasta-2E2	Kasta-2E2
+308	BUK-M3	BUK-M3
+309	CT-68	ST-68 Radar
+310	P-18 Terek	P-18 Terek Radar
+311	VTA 3U-23-2	VTA ZU-23-2
+312	Panzir-S1	Pantsir-S1
+313	TOR	TOR SAM
+314	P-35 Saturn	P-35 Saturn
+315	S-350	S-350 Vityaz
+316	VTA Kamaz	VTA Kamaz
+317	Train + VTA Ural	Train + VTA Ural
+318	Bunker OIVT	Bunker OIVT
+319	Boat 03160 Raptor	Boat 03160 Raptor
+320	BK-16 Boat	BK-16 Boat
+321	Project 705BM	Project 705BM
+322	Project 21631 "Buyan-M"	Project 21631 "Buyan-M"
+323	S-300	S-300
+324	S-400	S-400
+325	S-400 (Covered)	S-400
+326	S-500 Prometheus	S-500 Prometheus
+327	KA-27	Ka-27
+328	MI-8	Mi-8
+329	BE-12 Chaika	Be-12 Chaika
+330	Orion Drone	Orion Drone
+331	SU-24	Su-24
+332	AN-26	An-26
+333	MIG-29	MiG-29
+334	TOR	TOR SAM
+335	TOR + Semitruck	TOR + Semitruck
+336	S300-V	S-300V
+337	Fuel Truck	Fuel Truck
+338	BM-27 Uragan	BM-27 Uragan MLRS
+339	BM-27 Uragan	BM-27 Uragan MLRS
+340	Mobile Fire Group	Mobile Fire Group
+341	Command Post	Command Post
+342	Ammunition Workshop	Ammunition Workshop
+343	Meeting Site	Meeting Site
+344	Meeting Site	Meeting Site
+345	Drone Command	Drone Command
+346	Trucks	Trucks
+347	Trucks	Trucks
+348	Port Crane	Port Crane
+349	Project 11356 Frigate "Admiral Essen"	Project 11356 Frigate "Admiral Essen"
+350	Project 1239 Missile Hovercreaft	Project 1239 Missile Hovercraft
+351	OSA SAM	OSA SAM
+352	OSA SAM	OSA SAM
+353	Logisitcs Hub	Logistics Hub
+354	Drone Command	Drone Command
+355	Fuel Truck	Fuel Truck
+356	Special Vehicle	Special Vehicle
+357	Fuel Truck	Fuel Truck
+358	Tigr Armored Fighting Vehicle	Tigr Armored Fighting Vehicle
+359	TOR	TOR SAM
+360	TOR	TOR SAM
+361	BUK-M3	BUK-M3
+362	Tugboat	Tugboat
+363	Fuel Trains	Fuel Trains
+364	Command Post	Command Post
+365	Equipment Storage Site	Equipment Storage Site
+366	Temporary Deployment Point	Temporary Deployment Point
+367	Substation	Substation
+368	Substation	Substation
+369	Command Post	Command Post
+370	BE-200 "Altair" Aircraft	Be-200 "Altair" Aircraft
+371	KA-27	Ka-27
+372	KA-27	Ka-27
+373	TOR-M2	TOR-M2
+374	TOR-M2	TOR-M2
+375	Panzir-S1	Pantsir-S1
+376	Panzir-S1	Pantsir-S1
+377	Cargo Ship	Cargo Ship
+378	UAV Deployment Point & Training Center	UAV Deployment Point & Training Center
+379	Project 10410 "Svetlyak" Border Patrol Ship	Project 10410 "Svetlyak" Border Patrol Ship
+380	Project 10410 "Svetlyak" Border Patrol Ship	Project 10410 "Svetlyak" Border Patrol Ship
+381	Panzir-S1	Pantsir-S1
+382	Decoy Panzir-S1	Decoy Pantsir-S1
+383	RSBN-4N Short Range Radio Navigation System	RSBN-4N Short Range Radio Navigation System
+384	Locomotive	Locomotive
+385	Substation	Substation
+386	Fuel Tanks	Fuel Tanks
+387	S-300	S-300
+388	S-300	S-300
+389	9S19 Ginger	9S19 Ginger
+390	Fuel Trains	Fuel Trains
+391	Merlin Drone	Merlin Drone
+392	Logistics Warehouse	Logistics Warehouse
+393	Ammo & Logistics Warehouse	Ammo & Logistics Warehouse
+394	Field Artillery Warehouse	Field Artillery Warehouse
+395	UAV Unit & Maintenance Point	UAV Unit & Maintenance Point
+396	Trucks	Trucks
+397	PRV-16 Radar	PRV-16 Radar
+398	P-18 Radar	P-18 Terek Radar
+399	Fuel Depot	Fuel Depot
+400	Ammo Depot & Temporary Deployment Point	Ammo Depot & Temporary Deployment Point
+401	TU-142	Tu-142
+402	TU-142	Tu-142
+403	TU-142	Tu-142
+404	Iskandr OTRK	Iskandr OTRK
+405	Iskandr OTRK	Iskandr OTRK
+406	35N6 Kasta Radar	35N6 Kasta Radar
+407	Temporary Deployment Point	Temporary Deployment Point
+408	Field Artillery Ammo Depot	Field Artillery Ammo Depot
+409	Logistics Depot	Logistics Depot
+410	Ammot Depot	Ammunition Depot
+411	Logistics Depot	Logistics Depot
+412	Locomotive	Locomotive
+413	Panzir-S1	Pantsir-S1
+414	Panzir-S1	Pantsir-S1
+415	Decoy Panzir-S1	Decoy Pantsir-S1
+416	Neva-B, Neva-B2M	Neva-B, Neva-B2M
+417	NRxMHTOoG1G4qdk1	
+418	Temporary Deployment Point	Temporary Deployment Point
+419	Concentration of Military Equipment	Concentration of Military Equipment
+420	Command & Staff Vehicles	Command & Staff Vehicles
+421	Concentration of Military Equipment	Concentration of Military Equipment
+422	Command Post	Command Post
+423	Temporary Deployment Point	Temporary Deployment Point
+424	UAV Workshop	UAV Workshop
+425	BUK-M3	BUK-M3
+426	BUK-M3	BUK-M3
+427	BUK-M3	BUK-M3
+428	Strela-10	Strela-10
+429	Fuel Trains	Fuel Trains
+430	Fuel Depot	Fuel Depot
+431	UAV Command Post	UAV Command Post
+432	UAV Command Post	UAV Command Post
+433	Strike on Ammo Depot & Concentration of Equipment	Strike on Ammo Depot & Concentration of Equipment
+434	Fuel Depot	Fuel Depot
+435	TOR-M2	TOR-M2
+436	TOR-M2	TOR-M2
+437	ZU-23 AA	ZU-23 AA
+438	MANPADS Crew	MANPADS Crew
+439	Training Ground	Training Ground
+440	UAV Command Post	UAV Command Post
+441	UAV Temporary Deployment Site	UAV Temporary Deployment Site
+442	S-400	S-400
+443	OSA SAM	OSA SAM
+444	Panzir-S1	Pantsir-S1
+445	Locomotive	Locomotive
+446	Fuel Trains	Fuel Trains
+447	Locomotive	Locomotive
+448	Temporary Deployment Point	Temporary Deployment Point
+449	Substation	Substation
+450	Substation	Substation
+451	Substation	Substation
+452	Substation	Substation
+453	Substation	Substation
+454	EW Systems	EW Systems
+455	Personell Truck	Personnel Truck
+456	Logistic Vehicles	Logistic Vehicles
+457	Fuel Truck	Fuel Truck
+458	Nebo-SV	Nebo-SV
+459	C2 BUK-M2	BUK-M2 C2
+460	S-350 Tractor	S-350 Tractor
+461	Logistics Depot	Logistics Depot
+462	Temporary Deployment Point	Temporary Deployment Point
+463	Trucks	Trucks
+464	Trucks	Trucks
+465	Trucks	Trucks
+466	TOR	TOR SAM
+467	TOR	TOR SAM
+468	BUK-M3	BUK-M3
+469	Tugboat	Tugboat
+470	Fuel Trains	Fuel Trains
+471	Command Post	Command Post
+472	Equipment Storage Site	Equipment Storage Site
+473	Temporary Deployment Point	Temporary Deployment Point
+474	Substation	Substation
+475	Substation	Substation
+476	Command Post	Command Post
+477	P-18 Radar	P-18 Terek Radar
+478	P-18 Radar	P-18 Terek Radar
+479	Command Post	Command Post
+480	Temporary Deployment Point	Temporary Deployment Point
+481	Substation	Substation
+482	Substation	Substation
+483	Substation	Substation
+484	Gas Infrastructure	Gas Infrastructure
+485	Fuel Depot	Fuel Depot
+486	Trucks	Trucks
+487	Mobile Fire Group	Mobile Fire Group
+488	S-350 "Vityaz" Radar	S-350 Vityaz Radar
+489	TOR-M2KM	TOR-M2KM
+490	Oil Tanker	Oil Tanker
+491	Fuel Depot	Fuel Depot
+492	Fuel Depot	Fuel Depot
+493	TOR-M2	TOR-M2
+494	Tunguska	Tunguska
+495	Fuel Depot	Fuel Depot
+496	Fuel Trains	Fuel Trains
+497	UAV Command Post	UAV Command Post
+498	Gas Infrastructure	Gas Infrastructure
+499	Communication Tower	Communication Tower
+500	TOR	TOR SAM
+501	Redut-2US	Redut-2US
+502	UAV Command Post	UAV Command Post
+503	Communication Hub	Communication Hub
+504	Project 10410 "Svetlyak" Border Patrol Ship	Project 10410 "Svetlyak" Border Patrol Ship
+505	TOR-M2	TOR-M2
+506	Communication Tower & Node	Communication Tower & Node
+507	Fuel Trains	Fuel Trains
+508	Port Crane	Port Crane
+509	Command Staff Meeting	Command Staff Meeting
+510	Command Post	Command Post
+511	UAV Command Post	UAV Command Post
+512	Command Post	Command Post
+513	Communication Tower	Communication Tower
+514	Communication Tower	Communication Tower
+515	Communication Tower	Communication Tower
+516	Radar Dome	Radar Dome
+517	ST-68 Radar Dome	ST-68 Radar Dome
+518	Panzir-S1	Pantsir-S1
+519	Trucks	Trucks
+520	Trucks	Trucks
+521	Fuel Trains	Fuel Trains
+522	Logistic Depot	Logistics Depot
+523	Ammonution Depot	Ammunition Depot
+524	Mobile Fire Group	Mobile Fire Group
+525	35N6 Kasta Radar	35N6 Kasta Radar
+526	UAV Training Center	UAV Training Center
+527	Logistic Warehouse	Logistics Warehouse
+528	Command Post	Command Post

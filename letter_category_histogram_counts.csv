@@ -1,0 +1,102 @@
+letter_classification,category,count
+A,Air-defense systems / SAMs,36
+A,Radars and air-surveillance systems,14
+A,"Command, control, and communications",11
+A,"Fuel, oil, and energy infrastructure",10
+A,Naval vessels and maritime targets,9
+A,"Buildings, bunkers, and fixed facilities",9
+A,Aircraft and helicopters,8
+A,Logistics and transport,7
+A,"Artillery, rockets, and missile systems",6
+A,Drones and UAV-related sites,6
+A,Anti-aircraft guns / mobile fire groups,3
+A,"Navigation, space, and radio-beacon infrastructure",2
+A,Ammunition and military storage,2
+A,Ambiguous or aggregate entries,1
+A,Electronic warfare / reconnaissance / signals systems,1
+B,"Fuel, oil, and energy infrastructure",9
+B,Logistics and transport,5
+B,Air-defense systems / SAMs,2
+B,"Command, control, and communications",2
+B,Ammunition and military storage,1
+B,Drones and UAV-related sites,1
+B,"Buildings, bunkers, and fixed facilities",1
+B,Electronic warfare / reconnaissance / signals systems,1
+B,Anti-aircraft guns / mobile fire groups,1
+C,Air-defense systems / SAMs,1
+D,Logistics and transport,2
+E,Air-defense systems / SAMs,21
+E,"Fuel, oil, and energy infrastructure",7
+E,Logistics and transport,7
+E,"Command, control, and communications",3
+E,Drones and UAV-related sites,2
+E,"Buildings, bunkers, and fixed facilities",2
+E,Naval vessels and maritime targets,2
+E,"Artillery, rockets, and missile systems",1
+E,Armored vehicles and ground combat vehicles,1
+F,Air-defense systems / SAMs,13
+F,"Buildings, bunkers, and fixed facilities",4
+F,Logistics and transport,4
+F,Radars and air-surveillance systems,1
+F,Armored vehicles and ground combat vehicles,1
+F,Naval vessels and maritime targets,1
+F,Ammunition and military storage,1
+F,Anti-aircraft guns / mobile fire groups,1
+F,"Command, control, and communications",1
+G,Logistics and transport,30
+G,Air-defense systems / SAMs,28
+G,"Buildings, bunkers, and fixed facilities",9
+G,"Command, control, and communications",8
+G,Radars and air-surveillance systems,7
+G,Drones and UAV-related sites,7
+G,Ammunition and military storage,6
+G,"Fuel, oil, and energy infrastructure",5
+G,"Artillery, rockets, and missile systems",2
+G,Armored vehicles and ground combat vehicles,1
+G,Naval vessels and maritime targets,1
+H,Air-defense systems / SAMs,10
+H,Radars and air-surveillance systems,8
+H,Naval vessels and maritime targets,4
+H,Ambiguous or aggregate entries,2
+H,Aircraft and helicopters,1
+H,Electronic warfare / reconnaissance / signals systems,1
+H,"Buildings, bunkers, and fixed facilities",1
+H,"Artillery, rockets, and missile systems",1
+H,"Command, control, and communications",1
+I,Air-defense systems / SAMs,3
+I,"Fuel, oil, and energy infrastructure",1
+I,"Command, control, and communications",1
+J,Aircraft and helicopters,2
+J,Radars and air-surveillance systems,1
+K,Ambiguous or aggregate entries,1
+L,Logistics and transport,4
+L,Radars and air-surveillance systems,1
+L,"Buildings, bunkers, and fixed facilities",1
+L,Ammunition and military storage,1
+L,Air-defense systems / SAMs,1
+L,"Fuel, oil, and energy infrastructure",1
+L,"Command, control, and communications",1
+L,Anti-aircraft guns / mobile fire groups,1
+M,Radars and air-surveillance systems,2
+M,Air-defense systems / SAMs,1
+M,Electronic warfare / reconnaissance / signals systems,1
+M,Aircraft and helicopters,1
+P,Radars and air-surveillance systems,45
+P,Air-defense systems / SAMs,30
+P,Aircraft and helicopters,21
+P,Naval vessels and maritime targets,18
+P,Electronic warfare / reconnaissance / signals systems,15
+P,"Navigation, space, and radio-beacon infrastructure",12
+P,Drones and UAV-related sites,7
+P,"Buildings, bunkers, and fixed facilities",5
+P,Logistics and transport,4
+P,Ambiguous or aggregate entries,2
+P,"Fuel, oil, and energy infrastructure",2
+P,Anti-aircraft guns / mobile fire groups,1
+U,Air-defense systems / SAMs,5
+U,Armored vehicles and ground combat vehicles,2
+U,"Artillery, rockets, and missile systems",2
+U,Logistics and transport,2
+U,Ambiguous or aggregate entries,1
+U,Ammunition and military storage,1
+U,Radars and air-surveillance systems,1
